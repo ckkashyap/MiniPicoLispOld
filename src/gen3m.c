@@ -241,7 +241,7 @@ static int rdList(int z) {
       return x;
    }
    x = read0(NO);
-   return cons(x, rdList(z ?: x));
+   return cons(x, rdList(z ? z : x));
 }
 
 /* Read one expression */

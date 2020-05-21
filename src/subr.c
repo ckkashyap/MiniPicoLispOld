@@ -528,7 +528,8 @@ any doDelq(any ex) {
 any doReplace(any x) {
    any y;
    int i, n = length(cdr(x = cdr(x))) + 1 & ~1;
-   cell c1, c2, c[n];
+   cell c1, c2;
+   cell *c = (cell*)malloc(sizeof(cell) * (n));
 
    if (!isCell(data(c1) = EVAL(car(x))))
       return data(c1);
@@ -551,6 +552,7 @@ any doReplace(any x) {
    }
    cdr(y) = data(c1);
    drop(c1);
+   free(c);
    return data(c2);
 }
 
@@ -566,10 +568,13 @@ any doStrip(any x) {
 any doSplit(any x) {
    any y;
    int i, n = length(cdr(x = cdr(x)));
-   cell c1, c[n], res, sub;
+   cell c1, res, sub;
+   cell *c = (cell*)malloc(sizeof(cell) * (n));
 
-   if (!isCell(data(c1) = EVAL(car(x))))
+   if (!isCell(data(c1) = EVAL(car(x)))){
+       free(c);
       return data(c1);
+   }
    Save(c1);
    for (i = 0; i < n; ++i)
       x = cdr(x),  Push(c[i], EVAL(car(x)));
@@ -594,9 +599,12 @@ spl1: ;
    } while (isCell(data(c1) = cdr(data(c1))));
    y = cons(data(sub), Nil);
    drop(c1);
-   if (isNil(x))
+   if (isNil(x)) {
+       free(c);
       return y;
+   }
    cdr(x) = y;
+   free(c);
    return data(res);
 }
 
@@ -745,7 +753,8 @@ any doTail(any ex) {
 // (stem 'lst 'any ..) -> lst
 any doStem(any x) {
    int i, n = length(cdr(x = cdr(x)));
-   cell c1, c[n];
+   cell c1;
+   cell *c = (cell*)malloc(sizeof(cell) * (n));
 
    Push(c1, EVAL(car(x)));
    for (i = 0; i < n; ++i)
@@ -757,6 +766,7 @@ any doStem(any x) {
             break;
          }
    }
+   free(c);
    return Pop(c1);
 }
 
@@ -1008,7 +1018,8 @@ any doMember(any x) {
 
    x = cdr(x),  Push(c1, EVAL(car(x)));
    x = cdr(x),  x = EVAL(car(x));
-   return member(Pop(c1), x) ?: Nil;
+   any m = member(Pop(c1), x);
+   return m ? m : Nil;
 }
 
 // (memq 'any 'lst) -> any
@@ -1017,7 +1028,8 @@ any doMemq(any x) {
 
    x = cdr(x),  Push(c1, EVAL(car(x)));
    x = cdr(x),  x = EVAL(car(x));
-   return memq(Pop(c1), x) ?: Nil;
+   any m = memq(Pop(c1), x);
+   return m ? m : Nil;
 }
 
 // (mmeq 'lst 'lst) -> any
@@ -1312,18 +1324,21 @@ static any fill(any x, any s) {
       return x != val(x) && (isNil(s)? x!=At && firstByte(x)=='@' : memq(x,s)!=NULL)? val(x) : NULL;
    if (car(x) == Up) {
       x = cdr(x);
-      if (!isCell(y = EVAL(car(x))))
-         return fill(cdr(x), s) ?: cdr(x);
+      if (!isCell(y = EVAL(car(x)))) {
+          any ff = fill(cdr(x), s);
+         return ff ? ff : cdr(x);
+      }
       Push(c1, y);
       while (isCell(cdr(y)))
          y = cdr(y);
-      cdr(y) = fill(cdr(x), s) ?: cdr(x);
+      any ff = fill(cdr(x), s);
+      cdr(y) =  ff ? ff : cdr(x);
       return Pop(c1);
    }
    if (y = fill(car(x), s)) {
       Push(c1,y);
       y = fill(cdr(x), s);
-      return cons(Pop(c1), y ?: cdr(x));
+      return cons(Pop(c1), y ? y : cdr(x));
    }
    if (y = fill(cdr(x), s))
       return cons(car(x), y);

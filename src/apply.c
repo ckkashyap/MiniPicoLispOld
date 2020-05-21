@@ -9,46 +9,46 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
       if (isCell(foo)) {
          int i;
          any x = car(foo);
-         struct {  // bindFrame
-            struct bindFrame *link;
-            int i, cnt;
-            struct {any sym; any val;} bnd[length(x)+2];
-         } f;
+         bindFrame *f = allocFrame(length(x) + 2);
 
-         f.link = Env.bind,  Env.bind = (bindFrame*)&f;
-         f.i = 0;
-         f.cnt = 1,  f.bnd[0].sym = At,  f.bnd[0].val = val(At);
+
+         f->link = Env.bind,  Env.bind = (bindFrame*)&f;
+         f->i = 0;
+         f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
          while (isCell(x)) {
-            f.bnd[f.cnt].val = val(f.bnd[f.cnt].sym = car(x));
-            val(f.bnd[f.cnt].sym) = --n<0? Nil : cf? car(data(p[f.cnt-1])) : data(p[f.cnt-1]);
-            ++f.cnt, x = cdr(x);
+            f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym = car(x));
+            val(f->bnd[f->cnt].sym) = --n<0? Nil : cf? car(data(p[f->cnt-1])) : data(p[f->cnt-1]);
+            ++f->cnt, x = cdr(x);
          }
          if (isNil(x))
             x = prog(cdr(foo));
          else if (x != At) {
-            f.bnd[f.cnt].sym = x,  f.bnd[f.cnt].val = val(x),  val(x) = Nil;
+            f->bnd[f->cnt].sym = x,  f->bnd[f->cnt].val = val(x),  val(x) = Nil;
             while (--n >= 0)
-               val(x) = cons(consSym(cf? car(data(p[n+f.cnt-1])) : data(p[n+f.cnt-1]), 0), val(x));
-            ++f.cnt;
+               val(x) = cons(consSym(cf? car(data(p[n+f->cnt-1])) : data(p[n+f->cnt-1]), 0), val(x));
+            ++f->cnt;
             x = prog(cdr(foo));
          }
          else {
             int cnt = n;
             int next = Env.next;
             cell *arg = Env.arg;
-            cell c[Env.next = n];
+            Env.next = n;
+            cell *c=(cell*)malloc(sizeof(cell) * n);
 
             Env.arg = c;
-            for (i = f.cnt-1;  --n >= 0;  ++i)
+            for (i = f->cnt-1;  --n >= 0;  ++i)
                Push(c[n], cf? car(data(p[i])) : data(p[i]));
             x = prog(cdr(foo));
             if (cnt)
                drop(c[cnt-1]);
             Env.arg = arg,  Env.next = next;
+            free(c); c=NULL;
          }
-         while (--f.cnt >= 0)
-            val(f.bnd[f.cnt].sym) = f.bnd[f.cnt].val;
-         Env.bind = f.link;
+         while (--f->cnt >= 0)
+            val(f->bnd[f->cnt].sym) = f->bnd[f->cnt].val;
+         Env.bind = f->link;
+         free(f); f=NULL;
          return x;
       }
       if (val(foo) == val(Meth)) {
@@ -60,35 +60,31 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
          if (expr = method(o)) {
             int i;
             any cls = Env.cls, key = Env.key;
-            struct {  // bindFrame
-               struct bindFrame *link;
-               int i, cnt;
-               struct {any sym; any val;} bnd[length(x = car(expr))+3];
-            } f;
+            bindFrame *f = allocFrame(length(x = car(expr))+3);
 
             Env.cls = TheCls,  Env.key = TheKey;
-            f.link = Env.bind,  Env.bind = (bindFrame*)&f;
-            f.i = 0;
-            f.cnt = 1,  f.bnd[0].sym = At,  f.bnd[0].val = val(At);
+            f->link = Env.bind,  Env.bind = (bindFrame*)&f;
+            f->i = 0;
+            f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
             --n, ++p;
             while (isCell(x)) {
-               f.bnd[f.cnt].val = val(f.bnd[f.cnt].sym = car(x));
-               val(f.bnd[f.cnt].sym) = --n<0? Nil : cf? car(data(p[f.cnt-1])) : data(p[f.cnt-1]);
-               ++f.cnt, x = cdr(x);
+               f->bnd[f->cnt].val = val(f->bnd[f->cnt].sym = car(x));
+               val(f->bnd[f->cnt].sym) = --n<0? Nil : cf? car(data(p[f->cnt-1])) : data(p[f->cnt-1]);
+               ++f->cnt, x = cdr(x);
             }
             if (isNil(x)) {
-               f.bnd[f.cnt].sym = This;
-               f.bnd[f.cnt++].val = val(This);
+               f->bnd[f->cnt].sym = This;
+               f->bnd[f->cnt++].val = val(This);
                val(This) = o;
                x = prog(cdr(expr));
             }
             else if (x != At) {
-               f.bnd[f.cnt].sym = x,  f.bnd[f.cnt].val = val(x),  val(x) = Nil;
+               f->bnd[f->cnt].sym = x,  f->bnd[f->cnt].val = val(x),  val(x) = Nil;
                while (--n >= 0)
-                  val(x) = cons(consSym(cf? car(data(p[n+f.cnt-1])) : data(p[n+f.cnt-1]), 0), val(x));
-               ++f.cnt;
-               f.bnd[f.cnt].sym = This;
-               f.bnd[f.cnt++].val = val(This);
+                  val(x) = cons(consSym(cf? car(data(p[n+f->cnt-1])) : data(p[n+f->cnt-1]), 0), val(x));
+               ++f->cnt;
+               f->bnd[f->cnt].sym = This;
+               f->bnd[f->cnt++].val = val(This);
                val(This) = o;
                x = prog(cdr(expr));
             }
@@ -96,23 +92,25 @@ any apply(any ex, any foo, bool cf, int n, cell *p) {
                int cnt = n;
                int next = Env.next;
                cell *arg = Env.arg;
-               cell c[Env.next = n];
+               Env.next = n;
+               cell *c=(cell*)malloc(sizeof(cell)*n);
 
                Env.arg = c;
-               for (i = f.cnt-1;  --n >= 0;  ++i)
+               for (i = f->cnt-1;  --n >= 0;  ++i)
                   Push(c[n], cf? car(data(p[i])) : data(p[i]));
-               f.bnd[f.cnt].sym = This;
-               f.bnd[f.cnt++].val = val(This);
+               f->bnd[f->cnt].sym = This;
+               f->bnd[f->cnt++].val = val(This);
                val(This) = o;
                x = prog(cdr(expr));
                if (cnt)
                   drop(c[cnt-1]);
                Env.arg = arg,  Env.next = next;
             }
-            while (--f.cnt >= 0)
-               val(f.bnd[f.cnt].sym) = f.bnd[f.cnt].val;
-            Env.bind = f.link;
+            while (--f->cnt >= 0)
+               val(f->bnd[f->cnt].sym) = f->bnd[f->cnt].val;
+            Env.bind = f->link;
             Env.cls = cls,  Env.key = key;
+            free(f);f=NULL;
             return x;
          }
          err(ex, o, "Bad object");
@@ -146,13 +144,14 @@ any doApply(any ex) {
    x = cdr(ex),  Push(foo, EVAL(car(x)));
    x = cdr(x),  y = EVAL(car(x));
    {
-      cell c[(n = length(cdr(x))) + length(y)];
+      cell *c=(cell*)malloc(sizeof(cell)* ((n = length(cdr(x))) + length(y)));
 
       while (isCell(y))
          Push(c[n], car(y)),  y = cdr(y),  ++n;
       for (i = 0; isCell(x = cdr(x)); ++i)
          Push(c[i], EVAL(car(x)));
       x = apply(ex, data(foo), NO, n, c);
+      free(c);c=NULL;
    }
    drop(foo);
    return x;
@@ -162,7 +161,7 @@ any doApply(any ex) {
 any doPass(any ex) {
    any x;
    int n, i;
-   cell foo, c[length(cdr(x = cdr(ex))) + (Env.next>0? Env.next : 0)];
+   cell foo, *c=(cell*)malloc(sizeof(cell) * (length(cdr(x = cdr(ex))) + (Env.next>0? Env.next : 0)));
 
    Push(foo, EVAL(car(x)));
    for (n = 0; isCell(x = cdr(x)); ++n)
@@ -171,6 +170,7 @@ any doPass(any ex) {
       Push(c[n], data(Env.arg[i]));
    x = apply(ex, data(foo), NO, n, c);
    drop(foo);
+   free(c); c=NULL;
    return x;
 }
 
@@ -178,7 +178,7 @@ any doPass(any ex) {
 any doMaps(any ex) {
    any x, y;
    int i, n;
-   cell foo, sym, val, c[length(cdr(x = cdr(ex)))];
+   cell foo, sym, val, *c=(cell*)malloc(sizeof(cell) * (length(cdr(x = cdr(ex)))));
 
    Push(foo, EVAL(car(x)));
    x = cdr(x),  Push(sym, EVAL(car(x)));
@@ -193,6 +193,7 @@ any doMaps(any ex) {
          data(c[i]) = cdr(data(c[i]));
    }
    drop(foo);
+   free(c);c=NULL;
    return x;
 }
 
@@ -204,7 +205,7 @@ any doMap(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -214,6 +215,8 @@ any doMap(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return x;
@@ -227,7 +230,7 @@ any doMapc(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -237,6 +240,8 @@ any doMapc(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return x;
@@ -251,7 +256,7 @@ any doMaplist(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -265,6 +270,8 @@ any doMaplist(any ex) {
          cdr(x) = cons(apply(ex, data(foo), NO, n, c), Nil);
          x = cdr(x);
       }
+
+      free(c);
    }
    return Pop(res);
 }
@@ -278,7 +285,7 @@ any doMapcar(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -292,6 +299,8 @@ any doMapcar(any ex) {
          cdr(x) = cons(apply(ex, data(foo), YES, n, c), Nil);
          x = cdr(x);
       }
+
+      free(c);
    }
    return Pop(res);
 }
@@ -305,7 +314,7 @@ any doMapcon(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -326,6 +335,7 @@ any doMapcon(any ex) {
             x = cdr(x);
          cdr(x) = apply(ex, data(foo), NO, n, c);
       }
+      free(c);
    }
    return Pop(res);
 }
@@ -339,7 +349,7 @@ any doMapcan(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -360,6 +370,8 @@ any doMapcan(any ex) {
             x = cdr(x);
          cdr(x) = apply(ex, data(foo), YES, n, c);
       }
+
+      free(c);
    }
    return Pop(res);
 }
@@ -373,7 +385,7 @@ any doFilter(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -393,6 +405,8 @@ any doFilter(any ex) {
          if (!isNil(apply(ex, data(foo), YES, n, c)))
             x = cdr(x) = cons(car(data(c[0])), Nil);
       }
+
+      free(c);
    }
    return Pop(res);
 }
@@ -407,7 +421,7 @@ any doExtract(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -427,6 +441,8 @@ any doExtract(any ex) {
          if (!isNil(y = apply(ex, data(foo), YES, n, c)))
             x = cdr(x) = cons(y, Nil);
       }
+
+      free(c);
    }
    return Pop(res);
 }
@@ -439,7 +455,7 @@ any doSeek(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -453,6 +469,8 @@ any doSeek(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return Nil;
@@ -466,7 +484,7 @@ any doFind(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -480,6 +498,8 @@ any doFind(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return Nil;
@@ -493,7 +513,7 @@ any doPick(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -506,6 +526,8 @@ any doPick(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return Nil;
@@ -519,7 +541,7 @@ any doFully(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -532,6 +554,8 @@ any doFully(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return T;
@@ -547,7 +571,7 @@ any doCnt(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -558,6 +582,8 @@ any doCnt(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return box(res);
@@ -573,7 +599,7 @@ any doSum(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -584,6 +610,8 @@ any doSum(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    drop(foo);
    return box(res);
@@ -599,7 +627,7 @@ any doMaxi(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -610,6 +638,8 @@ any doMaxi(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+
+      free(c);
    }
    val(At2) = data(val);
    return Pop(res);
@@ -625,7 +655,7 @@ any doMini(any ex) {
    Push(foo, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -636,6 +666,8 @@ any doMini(any ex) {
          for (i = 0; i < n; ++i)
             data(c[i]) = cdr(data(c[i]));
       }
+      
+      free(c);
    }
    val(At2) = data(val);
    return Pop(res);
@@ -672,7 +704,7 @@ any doBy(any ex) {
    Push(foo1, EVAL(car(x))),  x = cdr(x),  Push(foo2, EVAL(car(x)));
    if (isCell(x = cdr(x))) {
       int i, n = 0;
-      cell c[length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (length(x)));
 
       do
          Push(c[n], EVAL(car(x))), ++n;
@@ -689,6 +721,8 @@ any doBy(any ex) {
       data(res) = apply(ex, data(foo2), NO, 1, &res);
       for (x = data(res); isCell(x); x = cdr(x))
          car(x) = cdar(x);
+
+      free(c);
    }
    return Pop(res);
 }

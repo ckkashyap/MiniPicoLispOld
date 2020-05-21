@@ -70,10 +70,13 @@ void pathString(any x, char *p) {
 any doPath(any x) {
    x = evSym(cdr(x));
    {
-      char nm[pathSize(x)];
+      char *nm=(char*)malloc(pathSize(x));
 
       pathString(x,nm);
-      return mkStr(nm);
+      any p = mkStr(nm);
+      free(nm);
+
+      return p;
    }
 }
 
@@ -82,7 +85,7 @@ void rdOpen(any ex, any x, inFrame *f) {
    if (isNil(x))
       f->fp = stdin;
    else {
-      char nm[pathSize(x)];
+      char *nm = (char *)malloc(pathSize(x));
 
       pathString(x,nm);
       if (nm[0] == '+') {
@@ -90,8 +93,10 @@ void rdOpen(any ex, any x, inFrame *f) {
             openErr(ex, nm);
          fseek(f->fp, 0L, SEEK_SET);
       }
-      else if (!(f->fp = fopen(nm, "r")))
+      else if (!(f->fp = fopen(nm, "rb")))
          openErr(ex, nm);
+
+      free(nm);
    }
 }
 
@@ -100,7 +105,7 @@ void wrOpen(any ex, any x, outFrame *f) {
    if (isNil(x))
       f->fp = stdout;
    else {
-      char nm[pathSize(x)];
+      char *nm = (char*)malloc(pathSize(x));
 
       pathString(x,nm);
       if (nm[0] == '+') {
@@ -109,6 +114,7 @@ void wrOpen(any ex, any x, outFrame *f) {
       }
       else if (!(f->fp = fopen(nm, "w")))
          openErr(ex, nm);
+      free(nm);
    }
 }
 
@@ -429,7 +435,7 @@ any token(any x, int c) {
       return symToNum(tail(popSym(i, w, p, &c1)), (int)unBox(val(Scl)), '.', 0);
    }
    if (Chr != '+' && Chr != '-') {
-      char nm[bufSize(x)];
+      char *nm = (char*)malloc(bufSize(x));
 
       bufString(x, nm);
       if (Chr >= 'A' && Chr <= 'Z' || Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr)) {
@@ -444,10 +450,13 @@ any token(any x, int c) {
             putByte(Chr, &i, &w, &p, &c1);
          }
          y = popSym(i, w, p, &c1);
-         if (x = isIntern(tail(y), Intern))
+         if (x = isIntern(tail(y), Intern)){
+             free(nm);
             return x;
+         }
          intern(y, Intern);
          val(y) = Nil;
+         free(nm);
          return y;
       }
    }
@@ -475,7 +484,7 @@ any doRead(any ex) {
 }
 
 // (peek) -> sym
-any doPeek(any ex __attribute__((unused))) {
+any doPeek(any ex) {
    if (!Chr)
       Env.get();
    return Chr<0? Nil : mkChar(Chr);
@@ -522,7 +531,7 @@ any doSkip(any x) {
 }
 
 // (eol) -> flg
-any doEol(any ex __attribute__((unused))) {
+any doEol(any ex) {
    return InFile && Chr=='\n' || Chr<=0? T : Nil;
 }
 
@@ -540,12 +549,16 @@ any doEof(any x) {
 
 // (from 'any ..) -> sym
 any doFrom(any x) {
-   int i, j, ac = length(x = cdr(x)), p[ac];
-   cell c[ac];
-   char *av[ac];
+   int i, j, ac = length(x = cdr(x));
+   int *p = (int *)malloc(sizeof(int)*ac);
+   cell *c = (cell*)malloc(sizeof(cell) * (ac));
+   char **av=(char **)malloc(sizeof(char *) * ac);
 
-   if (ac == 0)
+   if (ac == 0) {
+       free(p);
+       free(c);
       return Nil;
+   }
    for (i = 0;;) {
       Push(c[i], evSym(x));
       av[i] = alloc(NULL, bufSize(data(c[i]))),  bufString(data(c[i]), av[i]);
@@ -581,6 +594,10 @@ done:
       free(av[i]);
    while (++i < ac);
    drop(c[0]);
+
+   free(av);
+   free(p);
+   free(c);
    return x;
 }
 
@@ -593,23 +610,27 @@ any doTill(any ex) {
 
    x = evSym(cdr(ex));
    {
-      char buf[bufSize(x)];
+      char *buf=(char*)malloc(bufSize(x));
 
       bufString(x, buf);
       if (!Chr)
          Env.get();
-      if (Chr < 0 || strchr(buf,Chr))
+      if (Chr < 0 || strchr(buf,Chr)){
          return Nil;
+      }
       x = cddr(ex);
       if (isNil(EVAL(car(x)))) {
          Push(c1, x = cons(mkChar(Chr), Nil));
          while (Env.get(), Chr > 0 && !strchr(buf,Chr))
             x = cdr(x) = cons(mkChar(Chr), Nil);
+         free(buf);
          return Pop(c1);
       }
       putByte1(Chr, &i, &w, &x);
       while (Env.get(), Chr > 0 && !strchr(buf,Chr))
          putByte(Chr, &i, &w, &x, &c1);
+         
+      free(buf);
       return popSym(i, w, x, &c1);
    }
 }
@@ -1035,6 +1056,26 @@ any doPrintln(any x) {
 }
 
 // (flush) -> flg
-any doFlush(any ex __attribute__((unused))) {
+any doFlush(any ex) {
    return fflush(OutFile)? Nil : T;
+}
+
+any doRd(any x) {
+
+   x = cdr(x),  x = EVAL(car(x));
+    if(isNum(x))
+    {
+        int N = unBox(x);
+        long ACC = 0;
+        int MUL = 1 << ((N-1) * 8);
+
+        for(int i=0; i<N; i++)
+        {
+            Env.get();
+            ACC += (Chr * MUL);
+            MUL>>=8;
+        }
+        return box(ACC);
+    }
+    return Nil;
 }
