@@ -192,7 +192,7 @@ int symBytes(any x) {
 
 any isIntern(any nm, any tree[2]) {
    any x, y, z;
-   long n;
+   WORD_TYPE n;
 
    if (isTxt(nm)) {
       for (x = tree[0];  isCell(x);) {
@@ -228,7 +228,7 @@ any isIntern(any nm, any tree[2]) {
 
 any intern(any sym, any tree[2]) {
    any nm, x, y, z;
-   long n;
+   WORD_TYPE n;
 
    if ((nm = name(sym)) == txt(0))
       return sym;
@@ -308,7 +308,7 @@ any intern(any sym, any tree[2]) {
 
 void unintern(any sym, any tree[2]) {
    any nm, x, y, z, *p;
-   long n;
+   WORD_TYPE n;
 
    if ((nm = name(sym)) == txt(0))
       return;
@@ -960,7 +960,7 @@ any doPopq(any ex) {
 
 // (cut 'num 'var) -> lst
 any doCut(any ex) {
-   long n;
+   WORD_TYPE n;
    any x, y;
    cell c1, c2;
 
@@ -1089,7 +1089,7 @@ static void idx(any x, cell *p) {
 any doIdx(any ex) {
    any x, y, z, *p;
    int flg;
-   long n;
+   WORD_TYPE n;
    cell c1, c2;
 
    x = cdr(ex),  Push(c1, EVAL(car(x)));
@@ -1181,7 +1181,7 @@ static void lup(any x) {
 // (lup 'lst 'any) -> lst
 // (lup 'lst 'any 'any2) -> lst
 any doLup(any x) {
-   long n;
+   WORD_TYPE n;
    cell c1, c2;
 
    x = cdr(x),  Push(c1, EVAL(car(x)));

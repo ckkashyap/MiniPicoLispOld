@@ -66,7 +66,7 @@ void heapAlloc(void) {
    heap *h;
    cell *p;
 
-   h = (heap*)((long)alloc(NULL, sizeof(heap) + sizeof(cell)) + (sizeof(cell)-1) & ~(sizeof(cell)-1));
+   h = (heap*)((WORD_TYPE)alloc(NULL, sizeof(heap) + sizeof(cell)) + (sizeof(cell)-1) & ~(sizeof(cell)-1));
    h->next = Heaps,  Heaps = h;
    p = h->cells + CELLS-1;
    do
@@ -76,7 +76,7 @@ void heapAlloc(void) {
 
 // (heap 'flg) -> num
 any doHeap(any x) {
-   long n = 0;
+   WORD_TYPE n = 0;
 
    x = cdr(x);
    if (isNil(EVAL(car(x)))) {
@@ -273,7 +273,7 @@ bool equal(any x, any y) {
    return res;
 }
 
-long compare(any x, any y) {
+WORD_TYPE compare(any x, any y) {
    any a, b;
 
    if (x == y)
@@ -297,7 +297,7 @@ long compare(any x, any y) {
          return -1;
       a = name(x),  b = name(y);
       if (a == txt(0) && b == txt(0))
-         return (long)x - (long)y;
+         return (WORD_TYPE)x - (WORD_TYPE)y;
       if ((c = getByte1(&i, &w, &a)) == (d = getByte1(&j, &v, &b)))
          do
             if (c == 0)
@@ -309,7 +309,7 @@ long compare(any x, any y) {
       return y == T? -1 : +1;
    a = x, b = y;
    for (;;) {
-      long n;
+      WORD_TYPE n;
 
       if (n = compare(car(x),car(y)))
          return n;
@@ -544,9 +544,9 @@ any evList(any ex) {
 }
 
 /* Evaluate number */
-long evNum(any ex, any x) {return xNum(ex, EVAL(car(x)));}
+WORD_TYPE evNum(any ex, any x) {return xNum(ex, EVAL(car(x)));}
 
-long xNum(any ex, any x) {
+WORD_TYPE xNum(any ex, any x) {
    NeedNum(ex,x);
    return unBox(x);
 }
@@ -586,7 +586,7 @@ any doNext(any ex) {
 
 // (arg ['cnt]) -> any
 any doArg(any ex) {
-   long n;
+   WORD_TYPE n;
 
    if (Env.next < 0)
       return Nil;
