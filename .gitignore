@@ -4,3 +4,6 @@
 *.d
 *.pdb
 *.ilk
+*.exp
+*.dll
+*.lib

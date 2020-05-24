@@ -277,3 +277,4 @@
 (unless yoke (prinl "Failed to find yoke"))
 (unless zap (prinl "Failed to find zap"))
 (unless zero (prinl "Failed to find zero"))
+(prinl "DONE")

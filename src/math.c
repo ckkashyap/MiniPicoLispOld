@@ -475,7 +475,7 @@ any doSqrt(any ex) {
    x = cddr(ex);
    if (isNum(x = EVAL(car(x))))
       n *= unBox(x);
-	m = 1L << BITS-4;
+	m = C_CONST_ONE << BITS-4;
 	r = 0;
 	do {
 		if ((r += m) > n)

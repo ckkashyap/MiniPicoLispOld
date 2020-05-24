@@ -288,7 +288,7 @@ static any rdList(void) {
 static any anonymous(any s) {
    int c, i;
    word w;
-   unsigned long n;
+   UNSIGNED_WORD_TYPE n;
    heap *h;
 
    if ((c = getByte1(&i, &w, &s)) != '$')
@@ -870,11 +870,11 @@ void outString(char *s) {
       Env.put(*s++);
 }
 
-int bufNum(char buf[BITS/2], long n) {
-   return sprintf(buf, "%ld", n);
+int bufNum(char buf[BITS/2], WORD_TYPE n) {
+   return sprintf(buf, WORD_FORMAT_STRING_DEC, n);
 }
 
-void outNum(long n) {
+void outNum(WORD_TYPE n) {
    char buf[BITS/2];
 
    bufNum(buf, n);

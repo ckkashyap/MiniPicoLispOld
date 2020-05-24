@@ -15,10 +15,14 @@
     #define WORD_TYPE int32_t
     #define UNSIGNED_WORD_TYPE uint32_t
     #define WORD_FORMAT_STRING "0x%lx"
+    #define WORD_FORMAT_STRING_DEC "%ld"
+    #define C_CONST_ONE 1L
 #elif INTPTR_MAX == INT64_MAX
     #define WORD_TYPE int64_t
     #define UNSIGNED_WORD_TYPE uint64_t
     #define WORD_FORMAT_STRING "0x%llx"
+    #define WORD_FORMAT_STRING_DEC "%lld"
+    #define C_CONST_ONE 1LL
 #else
     #error "Unsupported bit width"
 #endif
