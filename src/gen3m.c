@@ -78,14 +78,18 @@ static void eofErr(void)
 
 static void addList(int *ix, char ***list, char *fmt, WORD_TYPE x)
 {
-   char buf[40];
+    char buf[40];
 
-   *list = realloc(*list, (*ix + 1) * sizeof(char*));
-   if (x)
-   {
-      sprintf(buf, fmt, x);
-   }
-   (*list)[(*ix)++] = strdup(x? buf : fmt);
+    *list = realloc(*list, (*ix + 1) * sizeof(char*));
+    if (x)
+    {
+        sprintf(buf, fmt, x);
+        (*list)[(*ix)++] = strdup(buf);
+    }
+    else
+    {
+        (*list)[(*ix)++] = strdup(fmt);
+    }
 }
 
 static void mkSym(int *ix, char ***list, char *mem, char *name, char *value)
