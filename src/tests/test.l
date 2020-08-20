@@ -277,4 +277,6 @@
 (unless yoke (prinl "Failed to find yoke"))
 (unless zap (prinl "Failed to find zap"))
 (unless zero (prinl "Failed to find zero"))
+(setq X '( (X) (+ 1 X)))
+(unless (= 11 (X 10)) (prinl "Inrement test failed"))
 (prinl "DONE")
