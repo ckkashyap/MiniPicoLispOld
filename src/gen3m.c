@@ -157,71 +157,6 @@ static void mkRamSym(int *ix, char ***list, char *mem, char *name, char *value)
    }
 }
 
-static void mkSym(int *ix, char ***list, char *mem, char *name, char *value)
-{
-   bool bin;
-   int i, c, d;
-   word w;
-
-   bin = NO;
-   i = (w = Ascii6[*name++ & 127]) & 1? 7 : 6;
-   while (*name)
-   {
-      d = (c = Ascii6[*name++ & 127]) & 1? 7 : 6;
-
-      if (i != Bits)
-      {
-         w |= (word)c << i;
-      }
-      
-      if (i + d  > Bits)
-      {
-         if (bin)
-         {
-            addList(&RomIx, &Rom, "(Rom+%d)", RomIx + 2);
-         }
-         else
-         {
-            addList(ix, list, "(Rom+%d)", RomIx + (ix == &RomIx? 3 : 1));
-            addList(ix, list, value, 0);
-            bin = YES;
-         }
-
-         addList(&RomIx, &Rom, WORD_FORMAT_STRING, w);
-         w = c >> Bits - i;
-         i -= Bits;
-      }
-
-      i += d;
-   }
-
-   if (bin)
-   {
-      if (i <= (Bits-2))
-      {
-         addList(&RomIx, &Rom, WORD_FORMAT_STRING, box(w));
-      }
-      else
-      {
-         addList(&RomIx, &Rom, "(Rom+%d)", RomIx + 2);
-         addList(&RomIx, &Rom, WORD_FORMAT_STRING, w);
-         addList(&RomIx, &Rom, "2", 0);
-      }
-   }
-   else if (i > Bits-1)
-   {
-      addList(ix, list, "(Rom+%d)", RomIx + (ix == &RomIx? 3 : 1));
-      addList(ix, list, value, 0);
-      addList(&RomIx, &Rom, WORD_FORMAT_STRING, w);
-      addList(&RomIx, &Rom, "2", 0);
-   }
-   else
-   {
-      addList(ix, list, WORD_FORMAT_STRING, txt(w));
-      addList(ix, list, value, 0);
-   }
-}
-
 static void print(char buf[], int x)
 {
    if (x & 2)
@@ -274,14 +209,6 @@ static int cons(int x, int y)
    addList(&RomIx, &Rom, car, 0);
    addList(&RomIx, &Rom, cdr, 0);
    return ix << 2;
-}
-
-static int romSym(char *name, char *value)
-{
-   int ix = RomIx;
-
-   mkSym(&RomIx, &Rom, "(Rom+%d)", name, value);
-   return ix + 1 << 2;
 }
 
 static int ramSym(char *name, char *value)
@@ -569,7 +496,7 @@ static int read0(bool top)
       return x;
    }
 
-   insert(&Intern, Token, x = ramSym(Token, "(Rom+1)"));
+   insert(&Intern, Token, x = ramSym(Token, "(Ram+1)"));
    return x;
 }
 
