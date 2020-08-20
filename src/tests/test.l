@@ -1,4 +1,6 @@
 # Test if these symbols are available - from init.s
+(unless quote (prinl "Failed to find quote"))
+(unless T (prinl "Failed to find T"))
 (unless abs (prinl "Failed to find abs"))
 (unless + (prinl "Failed to find +"))
 (unless all (prinl "Failed to find all"))
