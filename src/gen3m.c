@@ -92,6 +92,71 @@ static void addList(int *ix, char ***list, char *fmt, WORD_TYPE x)
     }
 }
 
+static void mkRamSym(int *ix, char ***list, char *mem, char *name, char *value)
+{
+   bool bin;
+   int i, c, d;
+   word w;
+
+   bin = NO;
+   i = (w = Ascii6[*name++ & 127]) & 1? 7 : 6;
+   while (*name)
+   {
+      d = (c = Ascii6[*name++ & 127]) & 1? 7 : 6;
+
+      if (i != Bits)
+      {
+         w |= (word)c << i;
+      }
+      
+      if (i + d  > Bits)
+      {
+         if (bin)
+         {
+            addList(&RamIx, &Ram, "(Ram+%d)", RamIx + 2);
+         }
+         else
+         {
+            addList(ix, list, "(Ram+%d)", RamIx + 3);
+            addList(ix, list, value, 0);
+            bin = YES;
+         }
+
+         addList(&RamIx, &Ram, WORD_FORMAT_STRING, w);
+         w = c >> Bits - i;
+         i -= Bits;
+      }
+
+      i += d;
+   }
+
+   if (bin)
+   {
+      if (i <= (Bits-2))
+      {
+         addList(&RamIx, &Ram, WORD_FORMAT_STRING, box(w));
+      }
+      else
+      {
+         addList(&RamIx, &Ram, "(Ram+%d)", RamIx + 2);
+         addList(&RamIx, &Ram, WORD_FORMAT_STRING, w);
+         addList(&RamIx, &Ram, "2", 0);
+      }
+   }
+   else if (i > Bits-1)
+   {
+      addList(ix, list, "(Ram+%d)", RamIx + 3);
+      addList(ix, list, value, 0);
+      addList(&RamIx, &Ram, WORD_FORMAT_STRING, w);
+      addList(&RamIx, &Ram, "2", 0);
+   }
+   else
+   {
+      addList(ix, list, WORD_FORMAT_STRING, txt(w));
+      addList(ix, list, value, 0);
+   }
+}
+
 static void mkSym(int *ix, char ***list, char *mem, char *name, char *value)
 {
    bool bin;
@@ -223,7 +288,7 @@ static int ramSym(char *name, char *value)
 {
    int ix = RamIx;
 
-   mkSym(&RamIx, &Ram, "(Ram+%d)", name, value);
+   mkRamSym(&RamIx, &Ram, "(Ram+%d)", name, value);
    return -(ix + 1) << 2;
 }
 
