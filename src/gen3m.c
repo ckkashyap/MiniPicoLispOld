@@ -173,6 +173,25 @@ static void print(char buf[], int x)
    }
 }
 
+static int consRam(int x, int y)
+{
+   int i, ix = RomIx;
+   char car[40], cdr[40];
+
+   print(car, -x);
+   print(cdr, -y);
+   for (i = 0; i < RamIx;  i += 2)
+   {
+      if (strcmp(car, Ram[i]) == 0  &&  strcmp(cdr, Ram[i+1]) == 0)
+      {
+         return -i << 2;
+      }
+   }
+   addList(&RamIx, &Ram, car, 0);
+   addList(&RamIx, &Ram, cdr, 0);
+   return -ix << 2;
+}
+
 static int cons(int x, int y)
 {
    int i, ix = RomIx;
@@ -510,13 +529,13 @@ int main(int ac, char *av[])
       giveup("Can't create output files");
    }
 
-   insert(&Intern, "NIL", romSym("NIL", "(Rom+1)"));
-   cons(Nil, Nil);
-   fprintf(fp, "#define Nil (any)(Rom+1)\n");
-   insert(&Intern, "T", romSym("T", "(Rom+5)"));
-   fprintf(fp, "#define T (any)(Rom+5)\n");
-   insert(&Intern, "quote", romSym("quote", "(num(doQuote) + 2)"));
-   fprintf(fp, "#define Quote (any)(Rom+7)\nany doQuote(any);\n");
+   insert(&Intern, "NIL", ramSym("NIL", "(Ram+1)"));
+   consRam(Nil, Nil);
+   fprintf(fp, "#define Nil (any)(Ram+1)\n");
+   insert(&Intern, "T", ramSym("T", "(Ram+5)"));
+   fprintf(fp, "#define T (any)(Ram+5)\n");
+   insert(&Intern, "quote", ramSym("quote", "(num(doQuote) + 2)"));
+   fprintf(fp, "#define Quote (any)(Ram+7)\nany doQuote(any);\n");
    do
    {
       if (!freopen(*++av, "r", stdin))
