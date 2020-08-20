@@ -16,11 +16,16 @@ any TheKey, TheCls, Thrown;
 any Intern[2], Transient[2];
 any ApplyArgs, ApplyBody;
 
+#if 0
 /* ROM Data */
 any const Rom[] =
 {
    #include "rom.d"
 };
+#else
+any const Rom[1];
+
+#endif
 
 /* RAM Symbols */
 any Ram[] =
@@ -1115,6 +1120,17 @@ int main(int ac, char *av[])
 
    for (i = 1; i < RAMS; i += 2)
    {
+           printf("interning %d %p %p\n", i, Ram[i-1], Ram[i]);
+       //if (i > 1 && Ram[i-3] == (any)(Ram + i))
+       //{
+       //    printf("Skipping %d\n", i);
+       //    i+=2;
+       //    while (Ram[i-2] == (any)(Ram + i))
+       //    {
+       //        i+=2;
+       //    }
+       //}
+
       if (Ram[i] != (any)(Ram + i))
       {
          intern((any)(Ram + i), Intern);

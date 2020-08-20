@@ -165,7 +165,7 @@ static void print(char buf[], int x)
    }
    else if ((x >>= 2) > 0)
    {
-      sprintf(buf, "(Rom+%d)", x);
+      sprintf(buf, "(Ram+%d)", x);
    }
    else
    {
@@ -178,8 +178,8 @@ static int consRam(int x, int y)
    int i, ix = RomIx;
    char car[40], cdr[40];
 
-   print(car, -x);
-   print(cdr, -y);
+   print(car, x);
+   print(cdr, y);
    for (i = 0; i < RamIx;  i += 2)
    {
       if (strcmp(car, Ram[i]) == 0  &&  strcmp(cdr, Ram[i+1]) == 0)
@@ -194,6 +194,7 @@ static int consRam(int x, int y)
 
 static int cons(int x, int y)
 {
+    return consRam(x, y);
    int i, ix = RomIx;
    char car[40], cdr[40];
 
@@ -359,6 +360,7 @@ static int rdList(int z)
       {
          giveup("Bad dotted pair");
       }
+
 
       return x;
    }
@@ -624,10 +626,12 @@ int main(int ac, char *av[])
             }
             else
             {
-               addList(&RomIx, &Rom, Ram[-x-1], 0);
-               addList(&RomIx, &Rom, buf, 0);
+               addList(&RamIx, &Ram, Ram[-x-1], 0);
+               addList(&RamIx, &Ram, buf, 0);
                print(buf, ix << 2);
+               printf ("BEFORE %s\n", Ram[-x-1]);
                Ram[-x-1] = strdup(buf);
+               printf ("AFTER %s\n", Ram[-x-1]);
             }
          }
       }
