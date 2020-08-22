@@ -1118,21 +1118,27 @@ int main(int ac, char *av[])
    intern(Meth, Intern);
    intern(Quote, Intern);  // Last protected symbol
 
-   for (i = 1; i < RAMS; i += 2)
+   for (i = 9; i < RAMS; i += 2)
    {
-           printf("interning %d %p %p\n", i, Ram[i-1], Ram[i]);
-       //if (i > 1 && Ram[i-3] == (any)(Ram + i))
-       //{
-       //    printf("Skipping %d\n", i);
-       //    i+=2;
-       //    while (Ram[i-2] == (any)(Ram + i))
-       //    {
-       //        i+=2;
-       //    }
-       //}
+       if (i==51||
+               i==51||
+               i==53||
+               i==55||
+               i==57|| i==61
+               || (i>66 && i<=93))continue;
+       if (i > 1 && Ram[i-3] == (any)(Ram + i))
+       {
+           printf("Skipping %d\n", i);
+           i+=2;
+           while (Ram[i-2] == (any)(Ram + i))
+           {
+               i+=2;
+           }
+       }
 
       if (Ram[i] != (any)(Ram + i))
       {
+           printf("interning %d %p %p\n", i, Ram[i-1], Ram[i]);
          intern((any)(Ram + i), Intern);
       }
    }

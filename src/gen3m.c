@@ -76,19 +76,33 @@ static void eofErr(void)
    giveup("EOF Overrun");
 }
 
+int COUNT=0;
+int IDX=0;
 static void addList(int *ix, char ***list, char *fmt, WORD_TYPE x)
 {
     char buf[40];
+    char BUF[200];
+    COUNT++;
+
+        if(COUNT == 10) IDX=*ix;
 
     *list = realloc(*list, (*ix + 1) * sizeof(char*));
     if (x)
     {
         sprintf(buf, fmt, x);
-        (*list)[(*ix)++] = strdup(buf);
+        sprintf(BUF, "/*%d*/ %s", COUNT, buf);
+        printf("%s\n",BUF);
+        (*list)[(*ix)++] = strdup(BUF);
     }
     else
     {
-        (*list)[(*ix)++] = strdup(fmt);
+        sprintf(BUF, "/*%d*/ %s", COUNT, fmt);
+        printf("%s\n",BUF);
+        (*list)[(*ix)++] = strdup(BUF);
+        if(COUNT >= 10)
+        {
+            printf("---> %s\n", (*list)[IDX]);
+        }
     }
 }
 
@@ -169,13 +183,14 @@ static void print(char buf[], int x)
    }
    else
    {
+       //if (x == 0) while(1);
       sprintf(buf, "(Ram+%d)", -x);
    }
 }
 
 static int consRam(int x, int y)
 {
-   int i, ix = RomIx;
+   int i, ix = RamIx;
    char car[40], cdr[40];
 
    print(car, x);
@@ -195,21 +210,21 @@ static int consRam(int x, int y)
 static int cons(int x, int y)
 {
     return consRam(x, y);
-   int i, ix = RomIx;
-   char car[40], cdr[40];
+   //int i, ix = RomIx;
+   //char car[40], cdr[40];
 
-   print(car, x);
-   print(cdr, y);
-   for (i = 0; i < RomIx;  i += 2)
-   {
-      if (strcmp(car, Rom[i]) == 0  &&  strcmp(cdr, Rom[i+1]) == 0)
-      {
-         return i << 2;
-      }
-   }
-   addList(&RomIx, &Rom, car, 0);
-   addList(&RomIx, &Rom, cdr, 0);
-   return ix << 2;
+   //print(car, x);
+   //print(cdr, y);
+   //for (i = 0; i < RomIx;  i += 2)
+   //{
+   //   if (strcmp(car, Rom[i]) == 0  &&  strcmp(cdr, Rom[i+1]) == 0)
+   //   {
+   //      return i << 2;
+   //   }
+   //}
+   //addList(&RomIx, &Rom, car, 0);
+   //addList(&RomIx, &Rom, cdr, 0);
+   //return ix << 2;
 }
 
 static int ramSym(char *name, char *value)
@@ -366,7 +381,9 @@ static int rdList(int z)
    }
 
    x = read0(NO);
-   return cons(x, rdList(z ? z : x));
+   printf("HERE1\n");
+   int y = rdList(z ? z : x);
+   return cons(x, y);
 }
 
 /* Read one expression */
@@ -409,6 +426,7 @@ static int read0(bool top)
    if (Chr == '\'')
    {
       Chr = getchar();
+    printf("HERE2\n");
       return cons(Quote, read0(top));
    }
 
@@ -540,6 +558,7 @@ int main(int ac, char *av[])
       Chr = getchar();
       while ((x = read0(YES)) != Nil)
       {
+
          if (x & 2  ||  (x & 4) == 0)
          {
             giveup("Symbol expected");
@@ -604,11 +623,13 @@ int main(int ac, char *av[])
             else
             {
                Ram[-x] = strdup(buf);
+            printf("===> %s\n", Ram[-x]);
             }
          }
 
          while (skip() == ',')          // Properties
          {
+             printf("-----------------------------------\n");
             Chr = getchar();
             if (Chr == EOF)
             {
@@ -628,7 +649,7 @@ int main(int ac, char *av[])
             {
                addList(&RamIx, &Ram, Ram[-x-1], 0);
                addList(&RamIx, &Ram, buf, 0);
-               print(buf, ix << 2);
+               print(buf, (RamIx-2) << 2);
                printf ("BEFORE %s\n", Ram[-x-1]);
                Ram[-x-1] = strdup(buf);
                printf ("AFTER %s\n", Ram[-x-1]);
