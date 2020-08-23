@@ -1130,6 +1130,12 @@ int main(int ac, char *av[])
        {
            SKIP[i]=1;
        }
+
+       // skip the nubmer too
+       if ((3&((WORD_TYPE)Ram[i-1])) == 2)
+       {
+           SKIP[i]=1;
+       }
        
        // also, skip those BIN data thats already pointed to from somewhere
        for (int k = i+2; k < RAMS; k+=2)
