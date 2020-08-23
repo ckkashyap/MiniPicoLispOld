@@ -33,6 +33,8 @@ any Ram[] =
    #include "ram.d"
 };
 
+char SKIP[RAMS];
+
 static bool Jam;
 static jmp_buf ErrRst;
 
@@ -1120,12 +1122,34 @@ int main(int ac, char *av[])
 
    for (i = 9; i < RAMS; i += 2)
    {
-       if (i==51||
-               i==51||
-               i==53||
-               i==55||
-               i==57|| i==61
-               || (i>66 && i<=93))continue;
+       ////////////////////////////////////////////////////////////////////////////////
+       // HACK
+       // Right now I skip all the CELLs that have pointers in both CAR and CDR
+       ////////////////////////////////////////////////////////////////////////////////
+       if (!((WORD_TYPE)Ram[i-1] & 0x3) && !((WORD_TYPE)Ram[i] & 0x3))
+       {
+           SKIP[i]=1;
+       }
+       
+       // also, skip those BIN data thats already pointed to from somewhere
+       for (int k = i+2; k < RAMS; k+=2)
+       {
+           if ((WORD_TYPE)Ram[i-1] == (WORD_TYPE)&Ram[k])
+           {
+               SKIP[k]=1;
+
+               while(!((WORD_TYPE)Ram[k]&0x3))
+               {
+                   k+=2;
+                   SKIP[k]=1;
+               }
+           }
+       }
+       ////////////////////////////////////////////////////////////////////////////////
+
+       if (SKIP[i]) printf("SKP %d\n", i);
+       if (SKIP[i]) continue;
+
        if (i > 1 && Ram[i-3] == (any)(Ram + i))
        {
            printf("Skipping %d\n", i);

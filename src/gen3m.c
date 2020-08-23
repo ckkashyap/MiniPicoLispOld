@@ -183,12 +183,11 @@ static void print(char buf[], int x)
    }
    else
    {
-       //if (x == 0) while(1);
       sprintf(buf, "(Ram+%d)", -x);
    }
 }
 
-static int consRam(int x, int y)
+static int cons(int x, int y)
 {
    int i, ix = RamIx;
    char car[40], cdr[40];
@@ -205,26 +204,6 @@ static int consRam(int x, int y)
    addList(&RamIx, &Ram, car, 0);
    addList(&RamIx, &Ram, cdr, 0);
    return -ix << 2;
-}
-
-static int cons(int x, int y)
-{
-    return consRam(x, y);
-   //int i, ix = RomIx;
-   //char car[40], cdr[40];
-
-   //print(car, x);
-   //print(cdr, y);
-   //for (i = 0; i < RomIx;  i += 2)
-   //{
-   //   if (strcmp(car, Rom[i]) == 0  &&  strcmp(cdr, Rom[i+1]) == 0)
-   //   {
-   //      return i << 2;
-   //   }
-   //}
-   //addList(&RomIx, &Rom, car, 0);
-   //addList(&RomIx, &Rom, cdr, 0);
-   //return ix << 2;
 }
 
 static int ramSym(char *name, char *value)
@@ -542,7 +521,7 @@ int main(int ac, char *av[])
    }
 
    insert(&Intern, "NIL", ramSym("NIL", "(Ram+1)"));
-   consRam(Nil, Nil);
+   cons(Nil, Nil);
    fprintf(fp, "#define Nil (any)(Ram+1)\n");
    insert(&Intern, "T", ramSym("T", "(Ram+5)"));
    fprintf(fp, "#define T (any)(Ram+5)\n");
