@@ -77,32 +77,23 @@ static void eofErr(void)
 }
 
 int COUNT=0;
-int IDX=0;
 static void addList(int *ix, char ***list, char *fmt, WORD_TYPE x)
 {
     char buf[40];
     char BUF[200];
     COUNT++;
 
-        if(COUNT == 10) IDX=*ix;
-
     *list = realloc(*list, (*ix + 1) * sizeof(char*));
     if (x)
     {
         sprintf(buf, fmt, x);
         sprintf(BUF, "/*%d*/ %s", COUNT, buf);
-        printf("%s\n",BUF);
         (*list)[(*ix)++] = strdup(BUF);
     }
     else
     {
         sprintf(BUF, "/*%d*/ %s", COUNT, fmt);
-        printf("%s\n",BUF);
         (*list)[(*ix)++] = strdup(BUF);
-        if(COUNT >= 10)
-        {
-            printf("---> %s\n", (*list)[IDX]);
-        }
     }
 }
 
@@ -177,13 +168,10 @@ static void print(char buf[], int x)
    {
       sprintf(buf, "%d", x);
    }
-   else if ((x >>= 2) > 0)
-   {
-      sprintf(buf, "(Ram+%d)", x);
-   }
    else
    {
-      sprintf(buf, "(Ram+%d)", -x);
+      x >>= 2;
+      sprintf(buf, "(Ram+%d)", x);
    }
 }
 
@@ -198,12 +186,12 @@ static int cons(int x, int y)
    {
       if (strcmp(car, Ram[i]) == 0  &&  strcmp(cdr, Ram[i+1]) == 0)
       {
-         return -i << 2;
+         return i << 2;
       }
    }
    addList(&RamIx, &Ram, car, 0);
    addList(&RamIx, &Ram, cdr, 0);
-   return -ix << 2;
+   return ix << 2;
 }
 
 static int ramSym(char *name, char *value)
@@ -211,7 +199,7 @@ static int ramSym(char *name, char *value)
    int ix = RamIx;
 
    mkRamSym(&RamIx, &Ram, "(Ram+%d)", name, value);
-   return -(ix + 1) << 2;
+   return (ix + 1) << 2;
 }
 
 static void insert(symbol **tree, char *name, int value)
@@ -360,7 +348,6 @@ static int rdList(int z)
    }
 
    x = read0(NO);
-   printf("HERE1\n");
    int y = rdList(z ? z : x);
    return cons(x, y);
 }
@@ -405,7 +392,6 @@ static int read0(bool top)
    if (Chr == '\'')
    {
       Chr = getchar();
-    printf("HERE2\n");
       return cons(Quote, read0(top));
    }
 
@@ -448,7 +434,7 @@ static int read0(bool top)
          return x;
       }
 
-      print(buf, -(RamIx + 1) << 2);
+      print(buf, (RamIx + 1) << 2);
       insert(&Transient, Token, x = ramSym(Token, buf));
       return x;
    }
@@ -589,13 +575,13 @@ int main(int ac, char *av[])
 
             *p = '\0';
             sprintf(buf, "(num(%s) + 2)", Token);
-            Ram[-x] = strdup(buf);
+            Ram[x] = strdup(buf);
             fprintf(fp, "any %s(any);\n", Token);
          }
          else
          {                                 // Value
             print(buf, read0(YES));
-            Ram[-x] = strdup(buf);
+            Ram[x] = strdup(buf);
          }
 
          while (skip() == ',')          // Properties
@@ -607,12 +593,10 @@ int main(int ac, char *av[])
             }
 
             print(buf, read0(YES));
-            addList(&RamIx, &Ram, Ram[-x-1], 0);
+            addList(&RamIx, &Ram, Ram[x-1], 0);
             addList(&RamIx, &Ram, buf, 0);
             print(buf, (RamIx-2) << 2);
-            printf ("BEFORE %s\n", Ram[-x-1]);
-            Ram[-x-1] = strdup(buf);
-            printf ("AFTER %s\n", Ram[-x-1]);
+            Ram[x-1] = strdup(buf);
          }
       }
    }

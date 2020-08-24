@@ -16,16 +16,7 @@ any TheKey, TheCls, Thrown;
 any Intern[2], Transient[2];
 any ApplyArgs, ApplyBody;
 
-#if 0
-/* ROM Data */
-any const Rom[] =
-{
-   #include "rom.d"
-};
-#else
-any const Rom[1];
-
-#endif
+any const Rom[2];
 
 /* RAM Symbols */
 any Ram[] =
