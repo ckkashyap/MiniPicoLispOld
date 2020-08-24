@@ -595,20 +595,11 @@ int main(int ac, char *av[])
          else
          {                                 // Value
             print(buf, read0(YES));
-            if (x > 0)
-            {
-               Rom[x] = strdup(buf);
-            }
-            else
-            {
-               Ram[-x] = strdup(buf);
-            printf("===> %s\n", Ram[-x]);
-            }
+            Ram[-x] = strdup(buf);
          }
 
          while (skip() == ',')          // Properties
          {
-             printf("-----------------------------------\n");
             Chr = getchar();
             if (Chr == EOF)
             {
@@ -616,23 +607,12 @@ int main(int ac, char *av[])
             }
 
             print(buf, read0(YES));
-            ix = RomIx;
-            if (x > 0)
-            {
-               addList(&RomIx, &Rom, Rom[x-1], 0);
-               addList(&RomIx, &Rom, buf, 0);
-               print(buf, ix << 2);
-               Rom[x-1] = strdup(buf);
-            }
-            else
-            {
-               addList(&RamIx, &Ram, Ram[-x-1], 0);
-               addList(&RamIx, &Ram, buf, 0);
-               print(buf, (RamIx-2) << 2);
-               printf ("BEFORE %s\n", Ram[-x-1]);
-               Ram[-x-1] = strdup(buf);
-               printf ("AFTER %s\n", Ram[-x-1]);
-            }
+            addList(&RamIx, &Ram, Ram[-x-1], 0);
+            addList(&RamIx, &Ram, buf, 0);
+            print(buf, (RamIx-2) << 2);
+            printf ("BEFORE %s\n", Ram[-x-1]);
+            Ram[-x-1] = strdup(buf);
+            printf ("AFTER %s\n", Ram[-x-1]);
          }
       }
    }
@@ -641,14 +621,6 @@ int main(int ac, char *av[])
    fprintf(fp, "\n#define ROMS %d\n", RomIx);
    fprintf(fp, "#define RAMS %d\n", RamIx);
    fclose(fp);
-   if (fp = fopen("rom.d", "w"))
-   {
-      for (x = 0; x < RomIx; x += 2)
-      {
-         fprintf(fp, "(any)%s, (any)%s,\n", Rom[x], Rom[x+1]);
-      }
-      fclose(fp);
-   }
 
    if (fp = fopen("ram.d", "w"))
    {
