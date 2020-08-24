@@ -77,11 +77,14 @@ static void eofErr(void)
 }
 
 int COUNT=0;
-static void addList(int *ix, char ***list, char *fmt, WORD_TYPE x)
+static void addList(char *fmt, WORD_TYPE x)
 {
     char buf[40];
     char BUF[200];
     COUNT++;
+
+    int *ix = &RamIx;
+    char ***list = &Ram;
 
     *list = realloc(*list, (*ix + 1) * sizeof(char*));
     if (x)
@@ -97,7 +100,7 @@ static void addList(int *ix, char ***list, char *fmt, WORD_TYPE x)
     }
 }
 
-static void mkRamSym(int *ix, char ***list, char *mem, char *name, char *value)
+static void mkRamSym(char *mem, char *name, char *value)
 {
    bool bin;
    int i, c, d;
@@ -118,16 +121,16 @@ static void mkRamSym(int *ix, char ***list, char *mem, char *name, char *value)
       {
          if (bin)
          {
-            addList(&RamIx, &Ram, "(Ram+%d)", RamIx + 2);
+            addList("(Ram+%d)", RamIx + 2);
          }
          else
          {
-            addList(ix, list, "(Ram+%d)", RamIx + 3);
-            addList(ix, list, value, 0);
+            addList("(Ram+%d)", RamIx + 3);
+            addList(value, 0);
             bin = YES;
          }
 
-         addList(&RamIx, &Ram, WORD_FORMAT_STRING, w);
+         addList(WORD_FORMAT_STRING, w);
          w = c >> Bits - i;
          i -= Bits;
       }
@@ -139,26 +142,26 @@ static void mkRamSym(int *ix, char ***list, char *mem, char *name, char *value)
    {
       if (i <= (Bits-2))
       {
-         addList(&RamIx, &Ram, WORD_FORMAT_STRING, box(w));
+         addList(WORD_FORMAT_STRING, box(w));
       }
       else
       {
-         addList(&RamIx, &Ram, "(Ram+%d)", RamIx + 2);
-         addList(&RamIx, &Ram, WORD_FORMAT_STRING, w);
-         addList(&RamIx, &Ram, "2", 0);
+         addList("(Ram+%d)", RamIx + 2);
+         addList(WORD_FORMAT_STRING, w);
+         addList("2", 0);
       }
    }
    else if (i > Bits-1)
    {
-      addList(ix, list, "(Ram+%d)", RamIx + 3);
-      addList(ix, list, value, 0);
-      addList(&RamIx, &Ram, WORD_FORMAT_STRING, w);
-      addList(&RamIx, &Ram, "2", 0);
+      addList("(Ram+%d)", RamIx + 3);
+      addList(value, 0);
+      addList(WORD_FORMAT_STRING, w);
+      addList("2", 0);
    }
    else
    {
-      addList(ix, list, WORD_FORMAT_STRING, txt(w));
-      addList(ix, list, value, 0);
+      addList(WORD_FORMAT_STRING, txt(w));
+      addList(value, 0);
    }
 }
 
@@ -189,8 +192,8 @@ static int cons(int x, int y)
          return i << 2;
       }
    }
-   addList(&RamIx, &Ram, car, 0);
-   addList(&RamIx, &Ram, cdr, 0);
+   addList(car, 0);
+   addList(cdr, 0);
    return ix << 2;
 }
 
@@ -198,7 +201,7 @@ static int ramSym(char *name, char *value)
 {
    int ix = RamIx;
 
-   mkRamSym(&RamIx, &Ram, "(Ram+%d)", name, value);
+   mkRamSym("(Ram+%d)", name, value);
    return (ix + 1) << 2;
 }
 
@@ -593,8 +596,8 @@ int main(int ac, char *av[])
             }
 
             print(buf, read0(YES));
-            addList(&RamIx, &Ram, Ram[x-1], 0);
-            addList(&RamIx, &Ram, buf, 0);
+            addList(Ram[x-1], 0);
+            addList(buf, 0);
             print(buf, (RamIx-2) << 2);
             Ram[x-1] = strdup(buf);
          }
