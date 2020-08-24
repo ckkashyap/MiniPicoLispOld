@@ -488,7 +488,7 @@ static int read0(bool top)
 int main(int ac, char *av[])
 {
    int x, ix;
-   FILE *fp;
+   FILE *fpSYM, *fpRAM;
    char *p, buf[40];
 
    if ((ac -= 2) <= 0)
@@ -501,18 +501,18 @@ int main(int ac, char *av[])
       Bits = (int)sizeof(char*) * 8;
    }
 
-   if ((fp = fopen("sym.d", "w")) == NULL)
+   if ((fpSYM = fopen("sym.d", "w")) == NULL)
    {
       giveup("Can't create output files");
    }
 
    insert(&Intern, "NIL", ramSym("NIL", "(Ram+1)"));
    cons(Nil, Nil);
-   fprintf(fp, "#define Nil (any)(Ram+1)\n");
+   fprintf(fpSYM, "#define Nil (any)(Ram+1)\n");
    insert(&Intern, "T", ramSym("T", "(Ram+5)"));
-   fprintf(fp, "#define T (any)(Ram+5)\n");
+   fprintf(fpSYM, "#define T (any)(Ram+5)\n");
    insert(&Intern, "quote", ramSym("quote", "(num(doQuote) + 2)"));
-   fprintf(fp, "#define Quote (any)(Ram+7)\nany doQuote(any);\n");
+   fprintf(fpSYM, "#define Quote (any)(Ram+7)\nany doQuote(any);\n");
    do
    {
       if (!freopen(*++av, "r", stdin))
@@ -531,7 +531,7 @@ int main(int ac, char *av[])
 
          if (skip() == '[')
          {                   // C Identifier
-            fprintf(fp, "#define ");
+            fprintf(fpSYM, "#define ");
             for (;;)
             {
                Chr = getchar();
@@ -546,11 +546,11 @@ int main(int ac, char *av[])
                   break;
                }
 
-               putc(Chr, fp);
+               putc(Chr, fpSYM);
             }
 
             print(buf, x);
-            fprintf(fp, " (any)%s\n", buf);
+            fprintf(fpSYM, " (any)%s\n", buf);
          }
 
          x >>= 2;
@@ -576,7 +576,7 @@ int main(int ac, char *av[])
             *p = '\0';
             sprintf(buf, "(num(%s) + 2)", Token);
             Ram[x] = strdup(buf);
-            fprintf(fp, "any %s(any);\n", Token);
+            fprintf(fpSYM, "any %s(any);\n", Token);
          }
          else
          {                                 // Value
@@ -602,18 +602,18 @@ int main(int ac, char *av[])
    }
    while (--ac);
 
-   fprintf(fp, "\n#define ROMS %d\n", RomIx);
-   fprintf(fp, "#define RAMS %d\n", RamIx);
-   fclose(fp);
+   fprintf(fpSYM, "\n#define ROMS %d\n", RomIx);
+   fprintf(fpSYM, "#define RAMS %d\n", RamIx);
+   fclose(fpSYM);
 
-   if (fp = fopen("ram.d", "w"))
+   if (fpRAM = fopen("ram.d", "w"))
    {
       for (x = 0; x < RamIx; x += 2)
       {
-         fprintf(fp, "(any)%s, (any)%s,\n", Ram[x], Ram[x+1]);
+         fprintf(fpRAM, "(any)%s, (any)%s,\n", Ram[x], Ram[x+1]);
       }
 
-      fclose(fp);
+      fclose(fpRAM);
    }
 
    return 0;
