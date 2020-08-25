@@ -306,3 +306,4 @@ xor {doXor}
 yoke {doYoke}
 zap {doZap}
 zero {doZero}
+aaaaaaAAAA 10

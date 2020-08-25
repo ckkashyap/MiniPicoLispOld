@@ -286,4 +286,5 @@
 (prinl (length (remove 1 L)))
 (prinl (size L))
 (prinl (size (remove 1 L)))
+(prinl aaaaaaAAAA)
 (prinl "DONE")
