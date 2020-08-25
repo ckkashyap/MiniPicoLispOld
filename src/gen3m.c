@@ -33,7 +33,8 @@ typedef enum {NO,YES} bool;
 #define Quote  (7 << 2)
 
 static int Bits, Chr, RomIx, RamIx;
-static char **Rom, **Ram;
+static char **Ram;
+static char **Meta;
 static char Token[1024];
 
 static int read0(bool);
@@ -83,20 +84,17 @@ static void addList(char *fmt, WORD_TYPE x)
     char BUF[200];
     COUNT++;
 
-    int *ix = &RamIx;
-    char ***list = &Ram;
-
-    *list = realloc(*list, (*ix + 1) * sizeof(char*));
+    Ram = realloc(*list, (RamIx + 1) * sizeof(char*));
     if (x)
     {
         sprintf(buf, fmt, x);
         sprintf(BUF, "/*%d*/ %s", COUNT, buf);
-        (*list)[(*ix)++] = strdup(BUF);
+        Ram[RamIx++] = strdup(BUF);
     }
     else
     {
         sprintf(BUF, "/*%d*/ %s", COUNT, fmt);
-        (*list)[(*ix)++] = strdup(BUF);
+        Ram[RamIx++] = strdup(BUF);
     }
 }
 
