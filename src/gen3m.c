@@ -84,7 +84,7 @@ static void addList(char *fmt, WORD_TYPE x)
     char BUF[200];
     COUNT++;
 
-    Ram = realloc(*list, (RamIx + 1) * sizeof(char*));
+    Ram = realloc(Ram, (RamIx + 1) * sizeof(char*));
     if (x)
     {
         sprintf(buf, fmt, x);
