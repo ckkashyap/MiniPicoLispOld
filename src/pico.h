@@ -44,6 +44,8 @@ typedef enum {NO,YES} bool;
 typedef struct cell {            // PicoLisp primary data type
    struct cell *car;
    struct cell *cdr;
+   struct cell* e1;
+   struct cell* e2;
 } cell, *any;
 
 typedef any (*fun)(any);
@@ -121,7 +123,7 @@ typedef struct catchFrame {
 /* Symbol access */
 #define symPtr(x)       ((any)&(x)->cdr)
 #define val(x)          ((x)->car)
-#define tail(x)         (((x)-1)->cdr)
+#define tail(x)         (((x)-1)->e2)
 
 /* Cell access */
 #define car(x)          ((x)->car)
