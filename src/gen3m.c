@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdint.h>
 
-//#define FOUR
+#define FOUR
 
 #if INTPTR_MAX == INT32_MAX
     #define WORD_TYPE int32_t
@@ -121,19 +121,19 @@ static void mkRamSym(char *mem, char *name, char *value)
       {
          if (bin)
          {
-            addList("(Ram+%d)", RamIx + 2);
+            addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
          }
          else
          {
-            addList("(Ram+%d)", RamIx + 3);
+            addList("(Ram+%d)", RamIx + 5);
             addList(value, 0);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
             bin = YES;
          }
@@ -152,38 +152,38 @@ static void mkRamSym(char *mem, char *name, char *value)
       {
          addList(WORD_FORMAT_STRING, box(w));
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
       }
       else
       {
-         addList("(Ram+%d)", RamIx + 2);
+         addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
          addList(WORD_FORMAT_STRING, w);
          addList("2", 0);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
       }
    }
    else if (i == Bits)
    {
-      addList("(Ram+%d)", RamIx + 3);
+      addList("(Ram+%d)", RamIx + 5);
       addList(value, 0);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
       addList(WORD_FORMAT_STRING, w);
       addList("2", 0);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
    }
    else if (i > Bits)
@@ -196,8 +196,8 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList(WORD_FORMAT_STRING, txt(w));
       addList(value, 0);
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
    }
 }
@@ -222,7 +222,7 @@ static int cons(int x, int y)
 
    print(car, x);
    print(cdr, y);
-   for (i = 0; i < RamIx;  i += 2)
+   for (i = 0; i < RamIx;  i += 4)
    {
       if (strcmp(car, Ram[i]) == 0  &&  strcmp(cdr, Ram[i+1]) == 0)
       {
@@ -233,8 +233,8 @@ static int cons(int x, int y)
    addList(cdr, 0);
 
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
    return ix << 2;
 }
@@ -554,10 +554,10 @@ int main(int ac, char *av[])
    insert(&Intern, "NIL", ramSym("NIL", "(Ram+1)"));
    cons(Nil, Nil);
    fprintf(fpSYM, "#define Nil (any)(Ram+1)\n");
-   insert(&Intern, "T", ramSym("T", "(Ram+5)"));
-   fprintf(fpSYM, "#define T (any)(Ram+5)\n");
+   insert(&Intern, "T", ramSym("T", "(Ram+9)"));
+   fprintf(fpSYM, "#define T (any)(Ram+9)\n");
    insert(&Intern, "quote", ramSym("quote", "(num(doQuote) + 2)"));
-   fprintf(fpSYM, "#define Quote (any)(Ram+7)\nany doQuote(any);\n");
+   fprintf(fpSYM, "#define Quote (any)(Ram+13)\nany doQuote(any);\n");
    do
    {
       if (!freopen(*++av, "r", stdin))
@@ -642,11 +642,11 @@ int main(int ac, char *av[])
             addList(buf, 0);
 
 #ifdef FOUR
-            addList("0", 0);
-            addList("0", 0);
+            addList("1",1);
+            addList("1",1);
 #endif
 
-            print(buf, (RamIx-2) << 2);
+            print(buf, (RamIx-4) << 2);
             Ram[x-1] = strdup(buf);
          }
       }

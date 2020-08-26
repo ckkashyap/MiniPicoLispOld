@@ -1111,7 +1111,7 @@ int main(int ac, char *av[])
    intern(Meth, Intern);
    intern(Quote, Intern);  // Last protected symbol
 
-   for (i = 9; i < RAMS; i += 2)
+   for (i = 17; i < RAMS; i += 4)
    {
        ////////////////////////////////////////////////////////////////////////////////
        // HACK
@@ -1129,7 +1129,7 @@ int main(int ac, char *av[])
        }
        
        // also, skip those BIN data thats already pointed to from somewhere
-       for (int k = i+2; k < RAMS; k+=2)
+       for (int k = i+4; k < RAMS; k+=4)
        {
            if ((WORD_TYPE)Ram[i-1] == (WORD_TYPE)&Ram[k])
            {
