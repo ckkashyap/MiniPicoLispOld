@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdint.h>
 
+//#define FOUR
+
 #if INTPTR_MAX == INT32_MAX
     #define WORD_TYPE int32_t
     #define UNSIGNED_WORD_TYPE uint32_t
@@ -34,7 +36,6 @@ typedef enum {NO,YES} bool;
 
 static int Bits, Chr, RomIx, RamIx;
 static char **Ram;
-static char **Meta;
 static char Token[1024];
 
 static int read0(bool);
@@ -85,6 +86,7 @@ static void addList(char *fmt, WORD_TYPE x)
     COUNT++;
 
     Ram = realloc(Ram, (RamIx + 1) * sizeof(char*));
+
     if (x)
     {
         sprintf(buf, fmt, x);
@@ -120,11 +122,19 @@ static void mkRamSym(char *mem, char *name, char *value)
          if (bin)
          {
             addList("(Ram+%d)", RamIx + 2);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
          }
          else
          {
             addList("(Ram+%d)", RamIx + 3);
             addList(value, 0);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
             bin = YES;
          }
 
@@ -141,25 +151,54 @@ static void mkRamSym(char *mem, char *name, char *value)
       if (i <= (Bits-2))
       {
          addList(WORD_FORMAT_STRING, box(w));
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
       }
       else
       {
          addList("(Ram+%d)", RamIx + 2);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
          addList(WORD_FORMAT_STRING, w);
          addList("2", 0);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
       }
    }
-   else if (i > Bits-1)
+   else if (i == Bits)
    {
       addList("(Ram+%d)", RamIx + 3);
       addList(value, 0);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
       addList(WORD_FORMAT_STRING, w);
       addList("2", 0);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
+   }
+   else if (i > Bits)
+   {
+       printf("This should really not happen\n");
+       exit(0);
    }
    else
    {
       addList(WORD_FORMAT_STRING, txt(w));
       addList(value, 0);
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
    }
 }
 
@@ -192,6 +231,11 @@ static int cons(int x, int y)
    }
    addList(car, 0);
    addList(cdr, 0);
+
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
    return ix << 2;
 }
 
@@ -596,6 +640,12 @@ int main(int ac, char *av[])
             print(buf, read0(YES));
             addList(Ram[x-1], 0);
             addList(buf, 0);
+
+#ifdef FOUR
+            addList("0", 0);
+            addList("0", 0);
+#endif
+
             print(buf, (RamIx-2) << 2);
             Ram[x-1] = strdup(buf);
          }
@@ -607,6 +657,17 @@ int main(int ac, char *av[])
    fprintf(fpSYM, "#define RAMS %d\n", RamIx);
    fclose(fpSYM);
 
+#ifdef FOUR
+   if (fpRAM = fopen("ram.d", "w"))
+   {
+      for (x = 0; x < RamIx; x += 4)
+      {
+         fprintf(fpRAM, "(any)%s, (any)%s, %s, %s,\n", Ram[x], Ram[x+1], Ram[x+2], Ram[x+3]);
+      }
+
+      fclose(fpRAM);
+   }
+#else
    if (fpRAM = fopen("ram.d", "w"))
    {
       for (x = 0; x < RamIx; x += 2)
@@ -616,6 +677,7 @@ int main(int ac, char *av[])
 
       fclose(fpRAM);
    }
+#endif
 
    return 0;
 }
