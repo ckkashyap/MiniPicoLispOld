@@ -123,8 +123,8 @@ static void mkRamSym(char *mem, char *name, char *value)
          {
             addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
          }
          else
@@ -132,8 +132,8 @@ static void mkRamSym(char *mem, char *name, char *value)
             addList("(Ram+%d)", RamIx + 5);
             addList(value, 0);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
             bin = YES;
          }
@@ -152,22 +152,22 @@ static void mkRamSym(char *mem, char *name, char *value)
       {
          addList(WORD_FORMAT_STRING, box(w));
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
       }
       else
       {
          addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
          addList(WORD_FORMAT_STRING, w);
          addList("2", 0);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
       }
    }
@@ -176,14 +176,14 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList("(Ram+%d)", RamIx + 5);
       addList(value, 0);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
       addList(WORD_FORMAT_STRING, w);
       addList("2", 0);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
    }
    else if (i > Bits)
@@ -196,8 +196,8 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList(WORD_FORMAT_STRING, txt(w));
       addList(value, 0);
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
    }
 }
@@ -233,8 +233,8 @@ static int cons(int x, int y)
    addList(cdr, 0);
 
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
    return ix << 2;
 }
@@ -642,8 +642,8 @@ int main(int ac, char *av[])
             addList(buf, 0);
 
 #ifdef FOUR
-            addList("1",1);
-            addList("1",1);
+            addList("3", 3);
+            addList("3", 3);
 #endif
 
             print(buf, (RamIx-4) << 2);

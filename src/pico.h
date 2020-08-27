@@ -123,7 +123,8 @@ typedef struct catchFrame {
 /* Symbol access */
 #define symPtr(x)       ((any)&(x)->cdr)
 #define val(x)          ((x)->car)
-#define tail(x)         (((x)-1)->e2)
+#define tail(x)         (((cell *)((WORD_TYPE*)(x)-1))->car)
+//#define tail(x)         (((x)-1)->e2)
 
 /* Cell access */
 #define car(x)          ((x)->car)
