@@ -7,6 +7,22 @@
 #include <string.h>
 #include <stdint.h>
 
+
+typedef enum
+{
+    Undefined = (0<<2)|3,
+    Number = (1<<2)|3,
+    Symbol = (2<<2)|3,
+    FunctionPtr = (3<<2)|3,
+    Pair = (4<<2)|3,
+    Txt = (5<<2)|3,
+    Bin = (6<<2)|3,
+    BinEnd = (7<<2)|3,
+    NextPtr = (8<<2)|3,
+    TailPtr = (9<<2)|3,
+} CellPartType;
+
+
 #define FOUR
 
 #if INTPTR_MAX == INT32_MAX
@@ -100,6 +116,11 @@ static void addList(char *fmt, WORD_TYPE x)
     }
 }
 
+static void addMeta(CellPartType x)
+{
+    addList("%d", x);
+}
+
 static void mkRamSym(char *mem, char *name, char *value)
 {
    bool bin;
@@ -123,8 +144,8 @@ static void mkRamSym(char *mem, char *name, char *value)
          {
             addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
          }
          else
@@ -132,8 +153,8 @@ static void mkRamSym(char *mem, char *name, char *value)
             addList("(Ram+%d)", RamIx + 5);
             addList(value, 0);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
             bin = YES;
          }
@@ -152,22 +173,22 @@ static void mkRamSym(char *mem, char *name, char *value)
       {
          addList(WORD_FORMAT_STRING, box(w));
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
       }
       else
       {
          addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
          addList(WORD_FORMAT_STRING, w);
          addList("2", 0);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
       }
    }
@@ -176,14 +197,14 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList("(Ram+%d)", RamIx + 5);
       addList(value, 0);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
       addList(WORD_FORMAT_STRING, w);
       addList("2", 0);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
    }
    else if (i > Bits)
@@ -196,8 +217,8 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList(WORD_FORMAT_STRING, txt(w));
       addList(value, 0);
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
    }
 }
@@ -233,8 +254,8 @@ static int cons(int x, int y)
    addList(cdr, 0);
 
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
    return ix << 2;
 }
@@ -642,8 +663,8 @@ int main(int ac, char *av[])
             addList(buf, 0);
 
 #ifdef FOUR
-            addList("3", 3);
-            addList("3", 3);
+            addMeta(Undefined);
+            addMeta(Undefined);
 #endif
 
             print(buf, (RamIx-4) << 2);
