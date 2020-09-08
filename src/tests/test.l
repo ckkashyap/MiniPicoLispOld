@@ -287,4 +287,5 @@
 (prinl (size L))
 (prinl (size (remove 1 L)))
 (prinl aaaaaaAAAA)
+(prinl aaaaaaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
 (prinl "DONE")
