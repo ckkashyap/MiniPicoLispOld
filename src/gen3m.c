@@ -20,6 +20,7 @@ typedef enum
     BinEnd = (7<<2)|3,
     NextPtr = (8<<2)|3,
     TailPtr = (9<<2)|3,
+    Ptr = (10<<2)|3,
 } CellPartType;
 
 
@@ -52,6 +53,7 @@ typedef enum {NO,YES} bool;
 
 static int Bits, Chr, RomIx, RamIx;
 static char **Ram;
+static CellPartType *Types;
 static char Token[1024];
 
 static int read0(bool);
@@ -94,25 +96,24 @@ static void eofErr(void)
    giveup("EOF Overrun");
 }
 
-int COUNT=0;
 static void addList(char *fmt, WORD_TYPE x)
 {
     char buf[40];
-    char BUF[200];
-    COUNT++;
 
     Ram = realloc(Ram, (RamIx + 1) * sizeof(char*));
+    Types = realloc(Types, (RamIx+1) * sizeof(CellPartType));
 
     if (x)
     {
         sprintf(buf, fmt, x);
-        sprintf(BUF, "/*%d*/ %s", COUNT, buf);
-        Ram[RamIx++] = strdup(BUF);
+        Types[RamIx] = x;
+        Ram[RamIx++] = strdup(buf);
     }
     else
     {
-        sprintf(BUF, "/*%d*/ %s", COUNT, fmt);
-        Ram[RamIx++] = strdup(BUF);
+        sprintf(buf, "%s", fmt);
+        Types[RamIx] = Undefined;
+        Ram[RamIx++] = strdup(buf);
     }
 }
 
@@ -121,7 +122,7 @@ static void addMeta(CellPartType x)
     addList("%d", x);
 }
 
-static void mkRamSym(char *mem, char *name, char *value)
+static void mkRamSym(char *mem, char *name, char *value, CellPartType type)
 {
    bool bin;
    int i, c, d;
@@ -144,8 +145,8 @@ static void mkRamSym(char *mem, char *name, char *value)
          {
             addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+            addMeta(Bin);
+            addMeta(Ptr);
 #endif
          }
          else
@@ -153,8 +154,8 @@ static void mkRamSym(char *mem, char *name, char *value)
             addList("(Ram+%d)", RamIx + 5);
             addList(value, 0);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+            addMeta(Ptr);
+            addMeta(type);
 #endif
             bin = YES;
          }
@@ -173,22 +174,22 @@ static void mkRamSym(char *mem, char *name, char *value)
       {
          addList(WORD_FORMAT_STRING, box(w));
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+         addMeta(Bin);
+         addMeta(BinEnd);
 #endif
       }
       else
       {
          addList("(Ram+%d)", RamIx + 4);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+         addMeta(Bin);
+         addMeta(Ptr);
 #endif
          addList(WORD_FORMAT_STRING, w);
          addList("2", 0);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+         addMeta(Bin);
+         addMeta(Number);
 #endif
       }
    }
@@ -197,14 +198,14 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList("(Ram+%d)", RamIx + 5);
       addList(value, 0);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+      addMeta(Ptr);
+      addMeta(type);
 #endif
       addList(WORD_FORMAT_STRING, w);
       addList("2", 0);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+      addMeta(Bin);
+      addMeta(Number);
 #endif
    }
    else if (i > Bits)
@@ -217,8 +218,8 @@ static void mkRamSym(char *mem, char *name, char *value)
       addList(WORD_FORMAT_STRING, txt(w));
       addList(value, 0);
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+      addMeta(Txt);
+      addMeta(type);
 #endif
    }
 }
@@ -233,6 +234,21 @@ static void print(char buf[], int x)
    {
       x >>= 2;
       sprintf(buf, "(Ram+%d)", x);
+   }
+}
+
+static CellPartType print2(char buf[], int x)
+{
+   if (x & 2)
+   {
+      sprintf(buf, "%d", x);
+      return Number;
+   }
+   else
+   {
+      x >>= 2;
+      sprintf(buf, "(Ram+%d)", x);
+      return Ptr;
    }
 }
 
@@ -254,17 +270,17 @@ static int cons(int x, int y)
    addList(cdr, 0);
 
 #ifdef FOUR
-            addMeta(Undefined);
-            addMeta(Undefined);
+   addMeta(Types[x>>2]);
+   addMeta(Types[y>>2]);
 #endif
    return ix << 2;
 }
 
-static int ramSym(char *name, char *value)
+static int ramSym(char *name, char *value, CellPartType type)
 {
    int ix = RamIx;
 
-   mkRamSym("(Ram+%d)", name, value);
+   mkRamSym("(Ram+%d)", name, value, type);
    return (ix + 1) << 2;
 }
 
@@ -501,7 +517,7 @@ static int read0(bool top)
       }
 
       print(buf, (RamIx + 1) << 2);
-      insert(&Transient, Token, x = ramSym(Token, buf));
+      insert(&Transient, Token, x = ramSym(Token, buf, Symbol));
       return x;
    }
 
@@ -547,7 +563,7 @@ static int read0(bool top)
       return x;
    }
 
-   insert(&Intern, Token, x = ramSym(Token, "(Ram+1)"));
+   insert(&Intern, Token, x = ramSym(Token, "(Ram+1)", Symbol));
    return x;
 }
 
@@ -572,12 +588,12 @@ int main(int ac, char *av[])
       giveup("Can't create output files");
    }
 
-   insert(&Intern, "NIL", ramSym("NIL", "(Ram+1)"));
+   insert(&Intern, "NIL", ramSym("NIL", "(Ram+1)", Symbol));
    cons(Nil, Nil);
    fprintf(fpSYM, "#define Nil (any)(Ram+1)\n");
-   insert(&Intern, "T", ramSym("T", "(Ram+9)"));
+   insert(&Intern, "T", ramSym("T", "(Ram+9)", Symbol));
    fprintf(fpSYM, "#define T (any)(Ram+9)\n");
-   insert(&Intern, "quote", ramSym("quote", "(num(doQuote) + 2)"));
+   insert(&Intern, "quote", ramSym("quote", "(num(doQuote) + 2)", FunctionPtr));
    fprintf(fpSYM, "#define Quote (any)(Ram+13)\nany doQuote(any);\n");
    do
    {
@@ -642,12 +658,14 @@ int main(int ac, char *av[])
             *p = '\0';
             sprintf(buf, "(num(%s) + 2)", Token);
             Ram[x] = strdup(buf);
+            Types[x] = FunctionPtr;
             fprintf(fpSYM, "any %s(any);\n", Token);
          }
          else
          {                                 // Value
             print(buf, read0(YES));
             Ram[x] = strdup(buf);
+            Types[x] = FunctionPtr;
          }
 
          while (skip() == ',')          // Properties
@@ -663,7 +681,7 @@ int main(int ac, char *av[])
             addList(buf, 0);
 
 #ifdef FOUR
-            addMeta(Undefined);
+            addMeta(Types[x-1]);
             addMeta(Undefined);
 #endif
 
