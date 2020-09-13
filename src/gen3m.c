@@ -21,6 +21,7 @@ typedef enum
     NextPtr = (8<<2)|3,
     TailPtr = (9<<2)|3,
     Ptr = (10<<2)|3,
+    Dingo = 100|3,
 } CellPartType;
 
 
@@ -117,9 +118,22 @@ static void addList(char *fmt, WORD_TYPE x)
     }
 }
 
+static void addList2(char *fmt, WORD_TYPE x, char *mark)
+{
+    char buf[40];
+    sprintf(buf, "%s/*%s*/", fmt, mark);
+    addList(buf, x);
+}
+
 static void addMeta(CellPartType x)
 {
     addList("%d", x);
+}
+static void addMeta2(CellPartType x, char *mark)
+{
+    char buf[40];
+    sprintf(buf, "%s/*%s*/","%d", mark);
+    addList(buf, x);
 }
 
 static void mkRamSym(char *mem, char *name, char *value, CellPartType type)
@@ -434,8 +448,26 @@ static int rdList(int z)
    return cons(x, y);
 }
 
+static CellPartType getType(int x)
+{
+    if (2 == (x & 3)) return Number;
+    else if (4==(x & 7)) return Symbol;
+    else if (0 == (x & 7)) return Pair;
+    else {printf ("UNKNOWN %d\n", x&7); while(1);}
+}
+
 /* Read one expression */
 static int read0(bool top)
+{
+    int x = read00(top);
+    if (2 == (x & 3)) printf("");
+    else if (4==(x & 7)) printf("");
+    else if (0 == (x & 7)) printf("");
+    else {printf ("UNKNOWN %d\n", x&7); while(1);}
+    return x;
+}
+
+static int read00(bool top)
 {
    int x;
    word w;
@@ -658,14 +690,17 @@ int main(int ac, char *av[])
             *p = '\0';
             sprintf(buf, "(num(%s) + 2)", Token);
             Ram[x] = strdup(buf);
+            sprintf(buf, "%d", FunctionPtr);
+            Ram[x+2] = strdup(buf);
             Types[x] = FunctionPtr;
             fprintf(fpSYM, "any %s(any);\n", Token);
          }
          else
          {                                 // Value
-            print(buf, read0(YES));
+             int v = read0(YES);
+            print(buf, v);
             Ram[x] = strdup(buf);
-            Types[x] = FunctionPtr;
+            Types[x] = getType(v);
          }
 
          while (skip() == ',')          // Properties
@@ -677,16 +712,18 @@ int main(int ac, char *av[])
             }
 
             print(buf, read0(YES));
-            addList(Ram[x-1], 0);
+            addList2(Ram[x-1], 0, "K");
             addList(buf, 0);
 
 #ifdef FOUR
-            addMeta(Types[x-1]);
-            addMeta(Undefined);
+            addMeta(Types[x+1]);
+            addMeta(Types[x+2]);
 #endif
 
             print(buf, (RamIx-4) << 2);
             Ram[x-1] = strdup(buf);
+            sprintf(buf, "%d", Symbol);
+            Ram[x+1] = strdup(buf);
          }
       }
    }
