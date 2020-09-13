@@ -24,6 +24,14 @@ typedef enum
     Dingo = 100|3,
 } CellPartType;
 
+int isValidCellPartType(CellPartType x)
+{
+    if (Undefined != x && Number != x && Symbol != x && FunctionPtr != x && Pair != x && Txt != x && Bin != x && BinEnd != x && NextPtr != x && TailPtr != x && Ptr != x && Dingo != x)
+    {
+        return 0;
+    }
+    return 1;
+}
 
 #define FOUR
 
@@ -118,17 +126,24 @@ static void addList(char *fmt, WORD_TYPE x)
     }
 }
 
-static void addList2(char *fmt, WORD_TYPE x, char *mark)
+static void addList2(char *fmt, WORD_TYPE x, CellPartType type, char *mark)
 {
     char buf[40];
     sprintf(buf, "%s/*%s*/", fmt, mark);
     addList(buf, x);
+    Types[RamIx-1]=type;
 }
 
 static void addMeta(CellPartType x)
 {
+    if (Undefined != x && Number != x && Symbol != x && FunctionPtr != x && Pair != x && Txt != x && Bin != x && BinEnd != x && NextPtr != x && TailPtr != x && Ptr != x && Dingo != x)
+    {
+        printf("UNEXPECTED %lld\n", x);
+        while(1);
+    }
     addList("%d", x);
 }
+
 static void addMeta2(CellPartType x, char *mark)
 {
     char buf[40];
@@ -166,7 +181,7 @@ static void mkRamSym(char *mem, char *name, char *value, CellPartType type)
          else
          {
             addList("(Ram+%d)", RamIx + 5);
-            addList(value, 0);
+            addList2(value, 0, Dingo, "M");
 #ifdef FOUR
             addMeta(Ptr);
             addMeta(type);
@@ -200,7 +215,7 @@ static void mkRamSym(char *mem, char *name, char *value, CellPartType type)
          addMeta(Ptr);
 #endif
          addList(WORD_FORMAT_STRING, w);
-         addList("2", 0);
+         addList2("2", 0, Dingo, "N");
 #ifdef FOUR
          addMeta(Bin);
          addMeta(Number);
@@ -210,13 +225,13 @@ static void mkRamSym(char *mem, char *name, char *value, CellPartType type)
    else if (i == Bits)
    {
       addList("(Ram+%d)", RamIx + 5);
-      addList(value, 0);
+      addList2(value, 0, Dingo, "O");
 #ifdef FOUR
       addMeta(Ptr);
       addMeta(type);
 #endif
       addList(WORD_FORMAT_STRING, w);
-      addList("2", 0);
+      addList2("2", 0, Dingo, "P");
 #ifdef FOUR
       addMeta(Bin);
       addMeta(Number);
@@ -230,7 +245,7 @@ static void mkRamSym(char *mem, char *name, char *value, CellPartType type)
    else
    {
       addList(WORD_FORMAT_STRING, txt(w));
-      addList(value, 0);
+      addList2(value, 0, Dingo, "Q");
 #ifdef FOUR
       addMeta(Txt);
       addMeta(type);
@@ -280,12 +295,16 @@ static int cons(int x, int y)
          return i << 2;
       }
    }
-   addList(car, 0);
-   addList(cdr, 0);
+   //addList(car, 0);
+   //addList(cdr, 0);
+   addList2(car, 0, Dingo, "S");
+   addList2(cdr, 0, Dingo, "S");
 
 #ifdef FOUR
-   addMeta(Types[x>>2]);
-   addMeta(Types[y>>2]);
+   //addMeta(Types[x>>2]);
+   //addMeta(Types[y>>2]);
+   addMeta(Dingo);
+   addMeta(Dingo);
 #endif
    return ix << 2;
 }
@@ -293,6 +312,12 @@ static int cons(int x, int y)
 static int ramSym(char *name, char *value, CellPartType type)
 {
    int ix = RamIx;
+
+   if (!isValidCellPartType(type))
+   {
+       printf("BOOM\n");
+       while(1);
+   }
 
    mkRamSym("(Ram+%d)", name, value, type);
    return (ix + 1) << 2;
@@ -712,8 +737,8 @@ int main(int ac, char *av[])
             }
 
             print(buf, read0(YES));
-            addList2(Ram[x-1], 0, "K");
-            addList(buf, 0);
+            addList2(Ram[x-1], 0, Symbol, "K");
+            addList2(buf, 0, Symbol, "L");
 
 #ifdef FOUR
             addMeta(Types[x+1]);
