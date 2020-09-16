@@ -53,7 +53,7 @@ INT getByte(Any *c, WORD *w, INT *b)
         *w >>= 7;
         return ch;
     }
-    else if (t == Type_Bin)
+    else if (t == Type_Bin || t == Type_Bin_End)
     {
         if (((*b) + 7) > BITS)
         {
