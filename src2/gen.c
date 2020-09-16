@@ -7,7 +7,9 @@
 #define T       (1)
 #define Quote   (2)
 
+INT CELL_SIZE_BYTES = 3 * sizeof(WORD_TYPE);
 INT BITS = (INT)sizeof(char*) * 8;
+
 INT Chr, MemIdx;
 static char Delim[] = " \t\n\r\"'(),[]`~{}";
 static char Token[1024];
@@ -100,12 +102,12 @@ static void mkSym(char *name, char *value, Type type)
                 BIN = YES;
                 addNextPtr(3);
                 addMem(value);
-                addType(mkType(Type_Bin, type));
+                addType(mkType(Type_Bin_Start, type));
             }
 
             addWord(w);
             addNextPtr(2);
-            addType(mkType(Type_Txt, Type_Pair));
+            addType(mkType(BIN==YES? Type_Bin : Type_Txt, Type_Pair));
 
             w = c >> BITS - i;
             i -= BITS;
@@ -118,7 +120,7 @@ static void mkSym(char *name, char *value, Type type)
     if (BIN)
     {
         addWord(0); // TODO - 0 is the end of string
-        addType(mkType(Type_Txt, Type_Pair));
+        addType(mkType(Type_Bin_End, Type_Num));
     }
     else
     {

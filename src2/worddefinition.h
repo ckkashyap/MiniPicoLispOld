@@ -18,7 +18,6 @@
 typedef UNSIGNED_WORD_TYPE WORD;
 typedef int INT;
 
-INT CELL_SIZE_BYTES = 3 * sizeof(WORD_TYPE);
 
 typedef enum
 {
@@ -26,7 +25,9 @@ typedef enum
     Type_Num,
     Type_Sym,
     Type_Pair,
+    Type_Bin_Start,
     Type_Bin,
+    Type_Bin_End,
     Type_Txt,
 } Type;
 
