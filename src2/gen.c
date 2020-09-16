@@ -355,7 +355,7 @@ INT main(INT ac, char *av[])
 
     mkSym("abcdefghij", "10", Type_Num);
     mkSym("abcdefghij", "20", Type_Num);
-    mkSym("abcdefghijklmnopqrstuvwxyz", "20", Type_Num);
+    mkSym("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "20", Type_Num);
 
     fprintf(mem, "#define MEMS %d\n", MemIdx);
     fprintf(mem, "Any Mem[] = {\n");

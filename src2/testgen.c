@@ -57,6 +57,7 @@ INT getByte(Any *c, WORD *w, INT *b)
     {
         if (((*b) + 7) > BITS)
         {
+            if (t == Type_Bin_End) return 0;
             int bitsFromCurrent = BITS - (*b);
             int extra = 7 - bitsFromCurrent;
             int flag = 0x7f >> (7 - extra);
