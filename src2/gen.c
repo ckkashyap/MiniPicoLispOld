@@ -48,7 +48,7 @@ void addMem(char *v)
 void addWord(UNSIGNED_WORD_TYPE w)
 {
     char buf[100];
-    sprintf(buf, "(Any)(" WORD_FORMAT_STRING ")", w);
+    sprintf(buf, "(" WORD_FORMAT_STRING ")", w);
     addMem(buf);
 }
 
@@ -59,10 +59,10 @@ void addType(Type type)
     addMem(buf);
 }
 
-void addNextPtr()
+void addNextPtr(INT o)
 {
     char buf[100];
-    sprintf(buf, "(Any)(Mem + %d + 2)", MemIdx);
+    sprintf(buf, "(Any)(Mem + %d + %d)", MemIdx, o);
     addMem(buf);  
 }
 
@@ -98,13 +98,13 @@ static void mkSym(char *name, char *value, Type type)
             if (BIN == NO)
             {
                 BIN = YES;
-                addNextPtr();
+                addNextPtr(3);
                 addMem(value);
                 addType(mkType(Type_Bin, type));
             }
 
             addWord(w);
-            addNextPtr();
+            addNextPtr(2);
             addType(mkType(Type_Txt, Type_Pair));
 
             w = c >> BITS - i;
@@ -349,13 +349,20 @@ static INT read0(BOOL top)
 
 INT main(INT ac, char *av[])
 {
+    FILE *mem = fopen("mem.h", "w");
 
-    mkSym("aaaaaaaaaa", "10", Type_Num);
+    mkSym("abcdefghij", "10", Type_Num);
+    mkSym("abcdefghij", "20", Type_Num);
+    mkSym("abcdefghijklmnopqrstuvwxyz", "20", Type_Num);
 
+    fprintf(mem, "#define MEMS %d\n", MemIdx);
+    fprintf(mem, "Any Mem[] = {\n");
     for (INT i = 0; i < MemIdx; i += 3)
     {
-        printf("%s, %s, %s,\n", Mem[i], Mem[i + 1], Mem[i + 2]);
+        fprintf(mem, "    (Any)%s, (Any)%s, (Any)%s,\n", Mem[i], Mem[i + 1], Mem[i + 2]);
     }
+    fprintf(mem, "};\n");
+    fclose(mem);
 
     return 0;
 }
