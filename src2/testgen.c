@@ -40,7 +40,8 @@ void printType(Type t)
     }
 }
 
-INT getByte(Any *c, WORD *w, INT *b)
+// TODO - make sure that b is 0 when calling - for TXT really
+INT getByte(Any *c, WORD *w, WORD *b)
 {
     Type t = gtType((*c)->types, 0);
 
@@ -145,7 +146,7 @@ int main()
 
     INT ch;
     WORD w;
-    INT b;
+    WORD b;
     //Any x = (Any)&Mem[18];
     Any x = (Any)&Mem[0];
     while(ch=getByte(&x,  &w, &b))
