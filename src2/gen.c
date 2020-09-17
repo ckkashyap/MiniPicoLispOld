@@ -353,6 +353,7 @@ INT main(INT ac, char *av[])
 {
     FILE *mem = fopen("mem.h", "w");
 
+    mkSym("abc", "10", Type_Num);
     mkSym("abcdefghij", "10", Type_Num);
     mkSym("abcdefghij", "20", Type_Num);
     mkSym("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "20", Type_Num);

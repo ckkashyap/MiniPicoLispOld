@@ -75,10 +75,24 @@ INT getByte(Any *c, WORD *w, INT *b)
         (*b) += 7;
         return ch;
     }
+    else if (t == Type_Txt)
+    {
+        if ((WORD)(*c)->p1 != *w) // TODO - this is quite not right - they could accidentally be same
+        {
+            *w = (WORD)(*c)->p1;
+            *b = 0;
+        }
+
+        char ch = ((*w) >> *b) & 0x7f;
+        (*b) += 7;
+        return ch;
+    }
     else
     {
-        printf("I dont know what this is");
+        printf("I dont know what this is\n");
+        while(1);
     }
+
     return 0;
 }
 
@@ -105,6 +119,7 @@ INT print(Any c)
     }
     else if (t == Type_Txt)
     {
+        while(1);
     }
 
     return count;
@@ -122,16 +137,17 @@ int main()
     for (int i = 0; i < MEMS; i+=3)
     {
         Any x = (Any)&Mem[i];
-        count = print(x);
+        //count = print(x);
         printf("%llx %llx %llx (read %d cells)\n\n", Mem[i], Mem[i+1], Mem[i+2], count);
-        i+=((count-1)*3);
+        //i+=((count-1)*3);
     }
 
 
     INT ch;
     WORD w;
     INT b;
-    Any x = (Any)&Mem[18];
+    //Any x = (Any)&Mem[18];
+    Any x = (Any)&Mem[0];
     while(ch=getByte(&x,  &w, &b))
     printf("CH = %c\n", ch);
 
