@@ -21,13 +21,13 @@ typedef struct symbol
    struct symbol *less, *more;
 } symbol;
 
-static symbol *Intern, *Transient;
+static symbol *Intern;
 
 static char **Mem;
 
 static void giveup(char *msg)
 {
-   fprintf(stderr, "gen3m: %s\n", msg);
+   fprintf(stderr, "gen: %s\n", msg);
    exit(1);
 }
 
@@ -188,6 +188,15 @@ static INT skip(void)
    }
 }
 
+static int ramSym(char *name, char *value, Type type)
+{
+   INT ix = MemIdx;
+
+   mkSym(name, value, type);
+   return ix;
+}
+
+
 static void insert(symbol **tree, char *name, INT value)
 {
    symbol *p, **t;
@@ -213,6 +222,82 @@ static INT lookup(symbol **tree, char *name)
       }
    }
    return 0;
+}
+
+/* Read a list */
+static int rdList(int z)
+{
+   int x;
+
+   if (skip() == ')')
+   {
+      Chr = getchar();
+      return Nil;
+   }
+
+   if (Chr == ']')
+   {
+      return Nil;
+   }
+
+   if (Chr == '~')
+   {
+      noReadMacros();
+   }
+
+   if (Chr == '.')
+   {
+      Chr = getchar();
+      x = skip()==')' || Chr==']'? z : read0(NO);
+      if (skip() == ')')
+      {
+         Chr = getchar();
+      }
+      else if (Chr != ']')
+      {
+         giveup("Bad dotted pair");
+      }
+
+
+      return x;
+   }
+
+   x = read0(NO);
+   int y = rdList(z ? z : x);
+   return cons(x, y);
+}
+
+static int cons(int x, int y)
+{
+   int i, ix = MemIdx;
+   char car[40], cdr[40];
+
+   //print(car, x);
+   //print(cdr, y);
+   for (i = 0; i < MemIdx;  i += 4)
+   {
+      if (strcmp(car, Mem[i]) == 0  &&  strcmp(cdr, Mem[i+1]) == 0)
+      {
+         return i << 2;
+      }
+   }
+   //addList(car, 0);
+   //addList(cdr, 0);
+   //addList2(car, 0, Dingo, "S");
+   //addList2(cdr, 0, Dingo, "S");
+
+#ifdef FOUR
+   //addMeta(Types[x>>2]);
+   //addMeta(Types[y>>2]);
+   if (x&2)
+   {
+       //printf("X IS A NUMBER %d\n", x>>2);
+       //while(1);
+   }
+   addMeta(Dingo);
+   addMeta(Dingo);
+#endif
+   return ix << 2;
 }
 
 static INT read0(BOOL top)
@@ -293,13 +378,13 @@ static INT read0(BOOL top)
 
         *p = '\0';
 
-        if (x = lookup(&Transient, Token))
+        if (x = lookup(&Intern, Token))
         {
             return x;
         }
 
         sprintf(buf,"(Mem+%d)", MemIdx);
-        //insert(&Transient, Token, x = ramSym(Token, buf, Symbol));
+        insert(&Intern, Token, x = ramSym(Token, buf, Type_Txt));
         return x;
     }
 
@@ -334,10 +419,15 @@ static INT read0(BOOL top)
     }
 
     *p = '\0';
+
     w = strtol(Token, &p, 10);
     if (p != Token && *p == '\0')
     {
-        return box(w);
+        x = MemIdx;
+        addWord(0);
+        addWord(w);
+        addType(mkType(Type_Num, Type_Undefined));
+        return x;
     }
 
     if (x = lookup(&Intern, Token))
@@ -345,27 +435,162 @@ static INT read0(BOOL top)
         return x;
     }
 
-    //insert(&Intern, Token, x = ramSym(Token, "(Ram+1)", Symbol));
+    insert(&Intern, Token, x = ramSym(Token, "0/*Undefined1*/", mkType(Type_Sym, Type_Undefined)));
     return x;
 } 
 
+/* Test for escaped characters */
+static BOOL testEsc(void)
+{
+   for (;;)
+   {
+      if (Chr < 0)
+      {
+         return NO;
+      }
+
+      if (Chr != '\\')
+      {
+         return YES;
+      }
+
+      if (Chr = getchar(), Chr != '\n')
+      {
+         return YES;
+      }
+
+      do
+      {
+         Chr = getchar();
+      }
+      while (Chr == ' '  ||  Chr == '\t');
+   }
+}
+
 INT main(INT ac, char *av[])
 {
-    FILE *mem = fopen("mem.h", "w");
+    char buf[100];
+    char *p;
+    INT x; 
+    FILE *fpSYM;
+    FILE *fpMem = fopen("mem.h", "w");
 
-    mkSym("abc", "10", Type_Num);
-    mkSym("abcdefghij", "10", Type_Num);
-    mkSym("abcdefghij", "20", Type_Num);
-    mkSym("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "20", Type_Num);
+    if ((fpSYM = fopen("sym.d", "w")) == NULL)
+    {
+        giveup("Can't create output files");
+    }
 
-    fprintf(mem, "#define MEMS %d\n", MemIdx);
-    fprintf(mem, "Any Mem[] = {\n");
+    ac--;
+
+    ramSym("Nil", "0", mkType(Type_Sym, Type_Num));
+
+    do
+    {
+        char *n = *++av;
+        printf("Loading file %s\n", n);
+        if (!freopen(n, "r", stdin))
+        {
+            giveup("Can't open input file");
+        }
+
+        Chr = getchar();
+        while ((x = read0(YES)) != Nil)
+        {
+            if (skip() == '[')
+            {                   // C Identifier
+                fprintf(fpSYM, "#define ");
+                for (;;)
+                {
+                    Chr = getchar();
+                    if (Chr == EOF)
+                    {
+                        break;
+                    }
+
+                    if (Chr == ']')
+                    {
+                        Chr = getchar();
+                        break;
+                    }
+
+                    putc(Chr, fpSYM);
+                }
+
+                //print(buf, x);
+                fprintf(fpSYM, " (any)%s\n", buf);
+            }
+
+            if (skip() == '{')
+            {                   // Function pointer
+                for (p = Token;;)
+                {
+                    Chr = getchar();
+                    if (Chr == EOF)
+                    {
+                        break;
+                    }
+
+                    if (Chr == '}')
+                    {
+                        Chr = getchar();
+                        break;
+                    }
+
+                    *p++ = Chr;
+                }
+
+                *p = '\0';
+                sprintf(buf, "(num(%s) + 2)", Token);
+                //Ram[x] = strdup(buf);
+                //Ram[x+2] = strdup(buf);
+                fprintf(fpSYM, "any %s(any);\n", Token);
+            }
+            else
+            {                                 // Value
+                int v = read0(YES);
+                sprintf(buf, "(Mem+%d)/*aaa*/", v);
+                Mem[x + 1] = strdup(buf);
+            }
+
+            while (skip() == ',')          // Properties
+            {
+                Chr = getchar();
+                if (Chr == EOF)
+                {
+                    break;
+                }
+
+                //print(buf, read0(YES));
+
+
+                //print(buf, (RamIx-4) << 2);
+                //Ram[x-1] = strdup(buf);
+                //sprintf(buf, "%d", Symbol);
+                //Ram[x+1] = strdup(buf);
+            }
+        }
+    }
+    while (--ac);
+
+    x = ramSym("abc", "10", Type_Num);
+    printf("%d\n", x);
+    x = ramSym("abcdefghij", "10", Type_Num);
+    printf("%d\n", x);
+    x = ramSym("abcdefghij", "20", Type_Num);
+    printf("%d\n", x);
+    x = ramSym("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "20", Type_Num);
+    printf("%d\n", x);
+
+    fprintf(fpMem, "#define MEMS %d\n", MemIdx);
+    fprintf(fpMem, "Any Mem[] = {\n");
     for (INT i = 0; i < MemIdx; i += 3)
     {
-        fprintf(mem, "    (Any)%s, (Any)%s, (Any)%s,\n", Mem[i], Mem[i + 1], Mem[i + 2]);
+        fprintf(fpMem, "    (Any)%s, (Any)%s, (Any)%s,\n", Mem[i], Mem[i + 1], Mem[i + 2]);
     }
-    fprintf(mem, "};\n");
-    fclose(mem);
+    fprintf(fpMem, "};\n");
+    fclose(fpMem);
+
+
 
     return 0;
 }

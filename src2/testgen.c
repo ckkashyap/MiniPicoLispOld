@@ -47,6 +47,11 @@ INT getByte(Any *c, WORD *w, WORD *b)
 
     if ( t == Type_Bin_Start)
     {
+        if (*b != 0)
+        {
+            printf("ERROR - getByte called without setting b to 0\n");
+            exit(0);
+        }
         *c = (*c)->p1;
         *w = (WORD)(*c)->p1;
         *b = 7;
@@ -81,8 +86,13 @@ INT getByte(Any *c, WORD *w, WORD *b)
         if ((WORD)(*c)->p1 != *w) // TODO - this is quite not right - they could accidentally be same
         {
             *w = (WORD)(*c)->p1;
-            *b = 0;
+            if (*b != 0)
+            {
+                printf("ERROR - getByte called without setting b to 0\n");
+                exit(0);
+            }
         }
+
 
         char ch = ((*w) >> *b) & 0x7f;
         (*b) += 7;
@@ -128,29 +138,30 @@ INT print(Any c)
 
 int main()
 {
-    for (int i = 0; i < MEMS; i+=3)
-    {
-        Any x = (Any)&Mem[i];
-        printf("%p %llx %llx %llx\n", &Mem[i], Mem[i], Mem[i+1], Mem[i+2]);
-    }
-    printf("\n--\n\n");
-    INT count = 0;
-    for (int i = 0; i < MEMS; i+=3)
-    {
-        Any x = (Any)&Mem[i];
-        //count = print(x);
-        printf("%llx %llx %llx (read %d cells)\n\n", Mem[i], Mem[i+1], Mem[i+2], count);
-        //i+=((count-1)*3);
-    }
 
 
+
+    Any x;
     INT ch;
     WORD w;
-    WORD b;
-    //Any x = (Any)&Mem[18];
-    Any x = (Any)&Mem[0];
-    while(ch=getByte(&x,  &w, &b))
-    printf("CH = %c\n", ch);
+    WORD b=0;
+
+
+    x = (Any)&Mem[0];
+    w=b=0;
+    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
+
+    x = (Any)&Mem[3];
+    w=b=0;
+    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
+
+    x = (Any)&Mem[12];
+    w=b=0;
+    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
+
+    x = (Any)&Mem[21];
+    w=b=0;
+    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
 
     return 0;
 }
