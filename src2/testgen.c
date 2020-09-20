@@ -2,48 +2,28 @@
 
 INT BITS = (INT)sizeof(char*) * 8;
 
+#include "sym.h"
 #include "mem.h"
 
 Type gtType(WORD w, int i)
 {
     char *p = (char*)&w;
-    return p[i];
-}
-
-void printType(Type t)
-{
-    switch(t)
+    int t = p[1];
+    if (i == 0)
     {
-        case Type_Undefined:
-            printf("Type_Undefined\n");
-            break;
-        case Type_Num:
-            printf("Type_Num\n");
-            break;
-        case Type_Sym:
-            printf("Type_Sym\n");
-            break;
-        case Type_Pair:
-            printf("Type_Pair\n");
-            break;
-        case Type_Bin_Start:
-            printf("Type_Bin_Start\n");
-            break;
-        case Type_Bin_End:
-            printf("Type_Bin_End\n");
-            break;
-        case Type_Txt:
-            printf("Type_Txt\n");
-            break;
-        default:
-            printf("UNKNOWN\n");
+        return t & 0xf;
+    }
+    else
+    {
+        return t >> 4;
     }
 }
+
 
 // TODO - make sure that b is 0 when calling - for TXT really
 INT getByte(Any *c, WORD *w, WORD *b)
 {
-    Type t = gtType((*c)->types, 0);
+    Type t = gtType((*c)->types, 1);
 
     if ( t == Type_Bin_Start)
     {
@@ -114,54 +94,36 @@ INT print(Any c)
 
     Type t = gtType(c->types, 0);
 
-    if (t == Type_Bin_Start)
-    {
-        count++;
-        c=c->p1;
-        while(c)
-        {
-            printf("==>%p %p\n", c->p1, c->p2);
-            char ch = ((WORD)c->p1&0x7f);
-            printf("->%c\n", ch);
-            c = c->p2;
-            printf("c is now %p\n", c);
-            count++;
-        }
-    }
-    else if (t == Type_Txt)
-    {
-        while(1);
-    }
-
     return count;
 }
 
 int main()
 {
-
-
-
-    Any x;
+    INT t;
+    Any x = &Mem[3];
+    WORD w = 0;
+    WORD b = 0;
     INT ch;
-    WORD w;
-    WORD b=0;
 
 
-    x = (Any)&Mem[0];
-    w=b=0;
-    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
+    for (int i = 0; i < MEMS; i+=3)
+    {
+        x = &Mem[i];
+        t = gtType(x->types, 1);
+        if ( t != Type_Bin_Start && t != Type_Txt ) continue;
+        w = b = 0;
+        while (ch = getByte(&x, &w, &b)) {printf("%c", ch);}
+        printf("\n");
+    }
 
-    x = (Any)&Mem[3];
-    w=b=0;
-    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
+    return 0;
+}
 
-    x = (Any)&Mem[12];
-    w=b=0;
-    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
-    x = (Any)&Mem[21];
-    w=b=0;
-    while(ch=getByte(&x,  &w, &b))printf("%c", ch);printf("\n");
 
+Any doBye()
+{
     return 0;
 }

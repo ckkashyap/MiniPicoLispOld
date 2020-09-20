@@ -57,8 +57,15 @@ void addWord(UNSIGNED_WORD_TYPE w)
 void addType(Type type)
 {
     char buf[100];
-    sprintf(buf, "%d", type);
+    sprintf(buf, WORD_FORMAT_STRING, (WORD)type);
     addMem(buf);
+}
+
+void addSym(INT x)
+{
+    char buf[100];
+    sprintf(buf, "(Any)(Mem + %d)", x);
+    addMem(buf);  
 }
 
 void addNextPtr(INT o)
@@ -70,10 +77,9 @@ void addNextPtr(INT o)
 
 WORD mkType(Type t1, Type t2)
 {
-    WORD t;
+    WORD t=0;
     char *p = (char*)&t;
-    p[0] = t1;
-    p[1] = t2;
+    p[1] = (t1 << 4) | t2;
     return t;
 }
 
@@ -272,32 +278,11 @@ static int cons(int x, int y)
    int i, ix = MemIdx;
    char car[40], cdr[40];
 
-   //print(car, x);
-   //print(cdr, y);
-   for (i = 0; i < MemIdx;  i += 4)
-   {
-      if (strcmp(car, Mem[i]) == 0  &&  strcmp(cdr, Mem[i+1]) == 0)
-      {
-         return i << 2;
-      }
-   }
-   //addList(car, 0);
-   //addList(cdr, 0);
-   //addList2(car, 0, Dingo, "S");
-   //addList2(cdr, 0, Dingo, "S");
+   addSym(x);
+   addSym(y);
+   addType(mkType(Type_Sym, Type_Sym));
 
-#ifdef FOUR
-   //addMeta(Types[x>>2]);
-   //addMeta(Types[y>>2]);
-   if (x&2)
-   {
-       //printf("X IS A NUMBER %d\n", x>>2);
-       //while(1);
-   }
-   addMeta(Dingo);
-   addMeta(Dingo);
-#endif
-   return ix << 2;
+   return ix;
 }
 
 static INT read0(BOOL top)
@@ -424,8 +409,8 @@ static INT read0(BOOL top)
     if (p != Token && *p == '\0')
     {
         x = MemIdx;
-        addWord(0);
         addWord(w);
+        addWord(0);
         addType(mkType(Type_Num, Type_Undefined));
         return x;
     }
@@ -475,7 +460,7 @@ INT main(INT ac, char *av[])
     FILE *fpSYM;
     FILE *fpMem = fopen("mem.h", "w");
 
-    if ((fpSYM = fopen("sym.d", "w")) == NULL)
+    if ((fpSYM = fopen("sym.h", "w")) == NULL)
     {
         giveup("Can't create output files");
     }
@@ -540,15 +525,14 @@ INT main(INT ac, char *av[])
                 }
 
                 *p = '\0';
-                sprintf(buf, "(num(%s) + 2)", Token);
-                //Ram[x] = strdup(buf);
-                //Ram[x+2] = strdup(buf);
-                fprintf(fpSYM, "any %s(any);\n", Token);
+                sprintf(buf, "((Any)(%s))", Token);
+                Mem[x] = strdup(buf);
+                fprintf(fpSYM, "Any %s(Any);\n", Token);
             }
             else
             {                                 // Value
                 int v = read0(YES);
-                sprintf(buf, "(Mem+%d)/*aaa*/", v);
+                sprintf(buf, "(Mem+%d)", v);
                 Mem[x + 1] = strdup(buf);
             }
 
@@ -572,14 +556,14 @@ INT main(INT ac, char *av[])
     }
     while (--ac);
 
-    x = ramSym("abc", "10", Type_Num);
-    printf("%d\n", x);
-    x = ramSym("abcdefghij", "10", Type_Num);
-    printf("%d\n", x);
-    x = ramSym("abcdefghij", "20", Type_Num);
-    printf("%d\n", x);
-    x = ramSym("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "20", Type_Num);
-    printf("%d\n", x);
+    // x = ramSym("abc", "10", Type_Num);
+    // printf("%d\n", x);
+    // x = ramSym("abcdefghij", "10", Type_Num);
+    // printf("%d\n", x);
+    // x = ramSym("abcdefghij", "20", Type_Num);
+    // printf("%d\n", x);
+    // x = ramSym("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl", "20", Type_Num);
+    // printf("%d\n", x);
 
     fprintf(fpMem, "#define MEMS %d\n", MemIdx);
     fprintf(fpMem, "Any Mem[] = {\n");
