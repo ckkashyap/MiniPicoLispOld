@@ -98,7 +98,6 @@ INT printStr(Any s)
 
 INT print(Any x)
 {
-
     while (x != Nil)
     {
         Type t1 = gtType1(x->types);
@@ -122,6 +121,7 @@ INT print(Any x)
         if (t2 == Type_Sym)
         {
             x = (x->p2);
+            if (x == Nil) printf("Nil ");
         }
     }
 

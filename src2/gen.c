@@ -225,7 +225,7 @@ static INT lookup(symbol **tree, char *name)
          return p->val;
       }
    }
-   return 0;
+   return -1;
 }
 
 /* Read a list */
@@ -361,7 +361,7 @@ static INT read0(BOOL top)
 
         *p = '\0';
 
-        if (x = lookup(&Intern, Token))
+        if ((x = lookup(&Intern, Token)) >= 0)
         {
             return x;
         }
@@ -413,7 +413,7 @@ static INT read0(BOOL top)
         return x;
     }
 
-    if (x = lookup(&Intern, Token))
+    if ((x = lookup(&Intern, Token)) >= 0)
     {
         return x;
     }
@@ -467,7 +467,8 @@ INT main(INT ac, char *av[])
 
     ac--;
 
-    ramSym("Nil", "(Mem)", Type_Sym);
+    x = ramSym("Nil", "(Mem)", Type_Sym);
+    insert(&Intern, "Nil", x);
 
     do
     {
