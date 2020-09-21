@@ -24,6 +24,7 @@ typedef struct symbol
 static symbol *Intern;
 
 static char **Mem;
+static INT *Types;
 
 static void giveup(char *msg)
 {
@@ -41,6 +42,7 @@ static void eofErr(void)
    giveup("EOF Overrun");
 }
 
+
 void addMem(char *v)
 {
     Mem = realloc(Mem, (MemIdx + 1) * sizeof(char*));
@@ -54,11 +56,22 @@ void addWord(UNSIGNED_WORD_TYPE w)
     addMem(buf);
 }
 
+WORD mkType(Type t1, Type t2)
+{
+    WORD t=0;
+    char *p = (char*)&t;
+    p[1] = (t1 << 4) | t2;
+    return t;
+}
+
 void addType(Type type)
 {
     char buf[100];
     sprintf(buf, WORD_FORMAT_STRING, (WORD)type);
     addMem(buf);
+
+    Types = realloc(Types, (MemIdx / 3) * sizeof(INT));
+    Types[(MemIdx/3)-1] = type;
 }
 
 void addSym(INT x)
@@ -73,14 +86,6 @@ void addNextPtr(INT o)
     char buf[100];
     sprintf(buf, "(Any)(Mem + %d + %d)", MemIdx, o);
     addMem(buf);  
-}
-
-WORD mkType(Type t1, Type t2)
-{
-    WORD t=0;
-    char *p = (char*)&t;
-    p[1] = (t1 << 4) | t2;
-    return t;
 }
 
 static void mkSym(char *name, char *value, Type type)
@@ -133,13 +138,6 @@ static void mkSym(char *name, char *value, Type type)
         addMem(value);
         addType(mkType(Type_Txt, type));
     }
-}
-
-static void mkNum(char *name, WORD value)
-{
-    char buf[100];
-    sprintf(buf, WORD_FORMAT_STRING, value);
-    mkSym(name, buf, Type_Num);
 }
 
 static INT skip(void)
@@ -369,7 +367,7 @@ static INT read0(BOOL top)
         }
 
         sprintf(buf,"(Mem+%d)", MemIdx);
-        insert(&Intern, Token, x = ramSym(Token, buf, Type_Txt));
+        insert(&Intern, Token, x = ramSym(Token, buf, Type_Pair));
         return x;
     }
 
@@ -420,7 +418,7 @@ static INT read0(BOOL top)
         return x;
     }
 
-    insert(&Intern, Token, x = ramSym(Token, "0/*Undefined1*/", mkType(Type_Sym, Type_Undefined)));
+    insert(&Intern, Token, x = ramSym(Token, "0/*Undefined1*/", Type_Sym));
     return x;
 } 
 
@@ -465,9 +463,11 @@ INT main(INT ac, char *av[])
         giveup("Can't create output files");
     }
 
+    fprintf(fpSYM, "#define Nil (Mem+0)\n");
+
     ac--;
 
-    ramSym("Nil", "0", mkType(Type_Sym, Type_Num));
+    ramSym("Nil", "(Mem)", Type_Sym);
 
     do
     {
@@ -534,6 +534,8 @@ INT main(INT ac, char *av[])
                 int v = read0(YES);
                 sprintf(buf, "(Mem+%d)", v);
                 Mem[x + 1] = strdup(buf);
+                //sprintf(buf, WORD_FORMAT_STRING, );
+                //Mem[x + 2] = Types[x];
             }
 
             while (skip() == ',')          // Properties

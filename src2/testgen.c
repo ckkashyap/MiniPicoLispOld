@@ -5,25 +5,25 @@ INT BITS = (INT)sizeof(char*) * 8;
 #include "sym.h"
 #include "mem.h"
 
-Type gtType(WORD w, int i)
+Type gtType1(WORD w)
 {
     char *p = (char*)&w;
     int t = p[1];
-    if (i == 0)
-    {
-        return t & 0xf;
-    }
-    else
-    {
-        return t >> 4;
-    }
+    return t >> 4;
+}
+
+Type gtType2(WORD w)
+{
+    char *p = (char*)&w;
+    int t = p[1];
+    return t & 0xf;
 }
 
 
 // TODO - make sure that b is 0 when calling - for TXT really
 INT getByte(Any *c, WORD *w, WORD *b)
 {
-    Type t = gtType((*c)->types, 1);
+    Type t = gtType1((*c)->types);
 
     if ( t == Type_Bin_Start)
     {
@@ -87,32 +87,62 @@ INT getByte(Any *c, WORD *w, WORD *b)
     return 0;
 }
 
-INT print(Any c)
+INT printStr(Any s)
 {
-    INT count = 0;
-    Any v = c->p2; 
+    WORD w = 0;
+    WORD b = 0;
+    INT ch;
+    while (ch = getByte(&s, &w, &b)) {printf("%c", ch);}
+    return 0;
+}
 
-    Type t = gtType(c->types, 0);
+INT print(Any x)
+{
 
-    return count;
+    while (x != Nil)
+    {
+        Type t1 = gtType1(x->types);
+        Type t2 = gtType2(x->types);
+
+        if (t1 == Type_Sym)
+        {
+           print((x->p1));
+        }
+        else if (t1 == Type_Bin_Start || t1 == Type_Txt)
+        {
+            printStr(x);
+            printf(" ");
+        }
+        else if (t1 == Type_Num)
+        {
+            printf("%x ", x->p1);
+            return 0;
+        }
+
+        if (t2 == Type_Sym)
+        {
+            x = (x->p2);
+        }
+    }
+
+    return 0;
 }
 
 int main()
 {
     INT t;
-    Any x = &Mem[3];
-    WORD w = 0;
-    WORD b = 0;
-    INT ch;
-
 
     for (int i = 0; i < MEMS; i+=3)
     {
-        x = &Mem[i];
-        t = gtType(x->types, 1);
+        printf("%llx %llx %llx\n", Mem[i], Mem[i+1], Mem[i+2]);
+    }
+
+    for (int i = 0; i < MEMS; i+=3)
+    {
+        Any x = (Any)&Mem[i];
+        t = gtType1(x->types);
         if ( t != Type_Bin_Start && t != Type_Txt ) continue;
-        w = b = 0;
-        while (ch = getByte(&x, &w, &b)) {printf("%c", ch);}
+        print(x);
         printf("\n");
     }
 
