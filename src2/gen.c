@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "error.h"
 #include "worddefinition.h"
 
 #define Nil     (0)
@@ -26,22 +27,35 @@ static symbol *Intern;
 static char **Mem;
 static INT *Types;
 
-static void giveup(char *msg)
-{
-   fprintf(stderr, "gen: %s\n", msg);
-   exit(1);
-}
+static INT read0(BOOL top);
 
-static void noReadMacros(void)
+/* Test for escaped characters */
+static BOOL testEsc(void)
 {
-   giveup("Can't support read-macros");
-}
+   for (;;)
+   {
+      if (Chr < 0)
+      {
+         return NO;
+      }
 
-static void eofErr(void)
-{
-   giveup("EOF Overrun");
-}
+      if (Chr != '\\')
+      {
+         return YES;
+      }
 
+      if (Chr = getchar(), Chr != '\n')
+      {
+         return YES;
+      }
+
+      do
+      {
+         Chr = getchar();
+      }
+      while (Chr == ' '  ||  Chr == '\t');
+   }
+}
 
 void addMem(char *v)
 {
@@ -228,6 +242,19 @@ static INT lookup(symbol **tree, char *name)
    return -1;
 }
 
+static int cons(int x, int y)
+{
+   int i, ix = MemIdx;
+   char car[40], cdr[40];
+
+   addSym(x);
+   addSym(y);
+   addType(mkType(Type_Sym, Type_Sym));
+
+   return ix;
+}
+
+
 /* Read a list */
 static int rdList(int z)
 {
@@ -269,18 +296,6 @@ static int rdList(int z)
    x = read0(NO);
    int y = rdList(z ? z : x);
    return cons(x, y);
-}
-
-static int cons(int x, int y)
-{
-   int i, ix = MemIdx;
-   char car[40], cdr[40];
-
-   addSym(x);
-   addSym(y);
-   addType(mkType(Type_Sym, Type_Sym));
-
-   return ix;
 }
 
 static INT read0(BOOL top)
@@ -422,33 +437,6 @@ static INT read0(BOOL top)
     return x;
 } 
 
-/* Test for escaped characters */
-static BOOL testEsc(void)
-{
-   for (;;)
-   {
-      if (Chr < 0)
-      {
-         return NO;
-      }
-
-      if (Chr != '\\')
-      {
-         return YES;
-      }
-
-      if (Chr = getchar(), Chr != '\n')
-      {
-         return YES;
-      }
-
-      do
-      {
-         Chr = getchar();
-      }
-      while (Chr == ' '  ||  Chr == '\t');
-   }
-}
 
 INT main(INT ac, char *av[])
 {
@@ -456,9 +444,9 @@ INT main(INT ac, char *av[])
     char *p;
     INT x; 
     FILE *fpSYM;
-    FILE *fpMem = fopen("mem.h", "w");
+    FILE *fpMem = fopen("mem.d", "w");
 
-    if ((fpSYM = fopen("sym.h", "w")) == NULL)
+    if ((fpSYM = fopen("sym.d", "w")) == NULL)
     {
         giveup("Can't create output files");
     }
