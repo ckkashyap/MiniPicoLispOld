@@ -1,3 +1,5 @@
 *.o
 gen
 lisp
+test.c
+a.out

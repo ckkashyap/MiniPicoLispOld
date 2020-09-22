@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "worddefinition.h"
+#include "cell.h"
 
 INT BITS = (INT)sizeof(char*) * 8;
 
@@ -34,8 +34,8 @@ INT getByte(Any *c, WORD *w, WORD *b)
             printf("ERROR - getByte called without setting b to 0\n");
             exit(0);
         }
-        *c = (*c)->p1;
-        *w = (WORD)(*c)->p1;
+        *c = (*c)->CAR;
+        *w = (WORD)(*c)->CAR;
         *b = 7;
         char ch = (*w) & 0x7f;
         *w >>= 7;
@@ -50,9 +50,9 @@ INT getByte(Any *c, WORD *w, WORD *b)
             int extra = 7 - bitsFromCurrent;
             int flag = 0x7f >> (7 - extra);
             *b = extra;
-            *c = (*c)->p2;
+            *c = (*c)->CDR;
             char ch = *w;
-            *w = (WORD)(*c)->p1;
+            *w = (WORD)(*c)->CAR;
             ch |= (((*w) & flag) << bitsFromCurrent);
             *w >>= extra;
             return ch;
@@ -65,9 +65,9 @@ INT getByte(Any *c, WORD *w, WORD *b)
     }
     else if (t == Type_Txt)
     {
-        if ((WORD)(*c)->p1 != *w) // TODO - this is quite not right - they could accidentally be same
+        if ((WORD)(*c)->CAR != *w) // TODO - this is quite not right - they could accidentally be same
         {
-            *w = (WORD)(*c)->p1;
+            *w = (WORD)(*c)->CAR;
             if (*b != 0)
             {
                 printf("ERROR - getByte called without setting b to 0\n");
@@ -107,7 +107,7 @@ INT print(Any x)
 
         if (t1 == Type_Sym)
         {
-           print((x->p1));
+           print((x->CAR));
         }
         else if (t1 == Type_Bin_Start || t1 == Type_Txt)
         {
@@ -116,13 +116,13 @@ INT print(Any x)
         }
         else if (t1 == Type_Num)
         {
-            printf("%x ", x->p1);
+            printf(WORD_FORMAT_STRING " ", (x->CAR));
             return 0;
         }
 
         if (t2 == Type_Sym)
         {
-            x = (x->p2);
+            x = (x->CDR);
             if (x == Nil) printf("Nil ");
         }
     }

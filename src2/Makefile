@@ -1,5 +1,5 @@
 genfiles = gen.c error.c
-lispfiles = lisp.c
+lispfiles = lisp.c heapmem.c error.c
 
 lisp: mem.d sym.d $(lispfiles:.c=.o) 
 	gcc -o lisp $(lispfiles:.c=.o) 

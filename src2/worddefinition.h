@@ -4,20 +4,19 @@
 #include <stdint.h>
 
 #if INTPTR_MAX == INT32_MAX
-    #define WORD_TYPE int32_t
-    #define UNSIGNED_WORD_TYPE uint32_t
+    #define WORD_TYPE uint32_t
+    #define SIGNED_WORD_TYPE int32_t
     #define WORD_FORMAT_STRING "0x%lx"
 #elif INTPTR_MAX == INT64_MAX
-    #define WORD_TYPE int64_t
-    #define UNSIGNED_WORD_TYPE uint64_t
+    #define WORD_TYPE uint64_t
+    #define SIGNED_WORD_TYPE int64_t
     #define WORD_FORMAT_STRING "0x%llx"
 #else
     #error "Unsupported bit width"
 #endif
 
-typedef UNSIGNED_WORD_TYPE WORD;
+typedef WORD_TYPE WORD;
 typedef int INT;
-
 
 typedef enum
 {
@@ -33,11 +32,5 @@ typedef enum
 
 typedef enum {NO,YES} BOOL;
 
-typedef struct Cell
-{
-    struct Cell *p1;
-    struct Cell *p2;
-    WORD types;
-} Cell, *Any;
 
 #endif //__WORD_DEFINITION__

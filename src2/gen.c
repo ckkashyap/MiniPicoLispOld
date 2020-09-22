@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "error.h"
-#include "worddefinition.h"
+#include "cell.h"
 
 #define Nil     (0)
 #define T       (1)
@@ -63,7 +63,7 @@ void addMem(char *v)
     Mem[MemIdx++] = strdup(v);
 }
 
-void addWord(UNSIGNED_WORD_TYPE w)
+void addWord(WORD_TYPE w)
 {
     char buf[100];
     sprintf(buf, "(" WORD_FORMAT_STRING ")", w);
@@ -106,7 +106,7 @@ static void mkSym(char *name, char *value, Type type)
 {
     BOOL BIN = NO;
     INT i, c, d;
-    UNSIGNED_WORD_TYPE w;
+    WORD_TYPE w;
     i = 7;
 
     w = *name++;
@@ -117,7 +117,7 @@ static void mkSym(char *name, char *value, Type type)
 
         if (i != BITS)
         {
-            w |= (UNSIGNED_WORD_TYPE)c << i;
+            w |= (WORD_TYPE)c << i;
         }
 
         if ((i + d) > BITS)
@@ -451,7 +451,7 @@ INT main(INT ac, char *av[])
         giveup("Can't create output files");
     }
 
-    fprintf(fpSYM, "#define Nil (Mem+0)\n");
+    fprintf(fpSYM, "#define Nil ((Any)(Mem+0))\n");
 
     ac--;
 
