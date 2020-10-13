@@ -4,7 +4,7 @@
 .SILENT:
 
 bin = ../bin
-picoFiles = main.c gc.c flow.c math.c io.c
+picoFiles = main.c gc.c flow.c math.c
 
 CC = gcc
 
