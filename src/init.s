@@ -22,3 +22,4 @@ meth [Meth] {doMeth}
 abs {doAbs}
 bye {doBye}
 + {doAdd}
+de {doDe}
