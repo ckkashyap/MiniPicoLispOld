@@ -498,12 +498,12 @@ void pack(any x, int *i, word *p, any *q, cell *cp) {
 }
 
 ///////////////////////////////////////////////
-//               sym.c
+//               sym.c - END
 ///////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////
-//               io.c
+//               io.c - START
 ///////////////////////////////////////////////
 
 static any read0(bool);
@@ -1154,7 +1154,153 @@ void print(any x) {
 }
 
 ///////////////////////////////////////////////
-//               io.c
+//               io.c - END
+///////////////////////////////////////////////
+
+
+///////////////////////////////////////////////
+//               math.h
+///////////////////////////////////////////////
+
+/* Number of bytes */
+int numBytes(any x) {
+   int n = 4;
+   word w = (word)x >> 2;
+
+   if ((w & 0xFF000000) == 0) {
+      --n;
+      if ((w & 0xFF0000) == 0) {
+         --n;
+         if ((w & 0xFF00) == 0)
+            --n;
+      }
+   }
+   return n;
+}
+
+/* Make number from symbol */
+any symToNum(any s, int scl, int sep, int ign) {
+   unsigned c;
+   int i;
+   word w;
+   bool sign, frac;
+   long n;
+
+   if (!(c = getByte1(&i, &w, &s)))
+      return NULL;
+   while (c <= ' ')  /* Skip white space */
+      if (!(c = getByte(&i, &w, &s)))
+         return NULL;
+   sign = NO;
+   if (c == '+'  ||  c == '-' && (sign = YES))
+      if (!(c = getByte(&i, &w, &s)))
+         return NULL;
+   if ((c -= '0') > 9)
+      return NULL;
+   frac = NO;
+   n = c;
+   while ((c = getByte(&i, &w, &s))  &&  (!frac || scl)) {
+      if ((int)c == sep) {
+         if (frac)
+            return NULL;
+         frac = YES;
+      }
+      else if ((int)c != ign) {
+         if ((c -= '0') > 9)
+            return NULL;
+         n = n * 10 + c;
+         if (frac)
+            --scl;
+      }
+   }
+   if (c) {
+      if ((c -= '0') > 9)
+         return NULL;
+      if (c >= 5)
+         n += 1;
+      while (c = getByte(&i, &w, &s)) {
+         if ((c -= '0') > 9)
+            return NULL;
+      }
+   }
+   if (frac)
+      while (--scl >= 0)
+         n *= 10;
+   return box(sign? -n : n);
+}
+
+/* Make symbol from number */
+any numToSym(any x, int scl, int sep, int ign) {
+   int i;
+   word w;
+   cell c1;
+   long n;
+   byte *p, buf[BITS/2];
+
+   n = unBox(x);
+   putByte0(&i, &w, &x);
+   if (n < 0) {
+      n = -n;
+      putByte('-', &i, &w, &x, &c1);
+   }
+   for (p = buf;;) {
+      *p = n % 10;
+      if ((n /= 10) == 0)
+         break;
+      ++p;
+   }
+   if ((scl = p - buf - scl) < 0) {
+      putByte('0', &i, &w, &x, &c1);
+      putByte(sep, &i, &w, &x, &c1);
+      while (scl < -1)
+         putByte('0', &i, &w, &x, &c1),  ++scl;
+   }
+   for (;;) {
+      putByte(*p + '0', &i, &w, &x, &c1);
+      if (--p < buf)
+         return popSym(i, w, x, &c1);
+      if (scl == 0)
+         putByte(sep, &i, &w, &x, &c1);
+      else if (ign  &&  scl > 0  &&  scl % 3 == 0)
+         putByte(ign, &i, &w, &x, &c1);
+      --scl;
+   }
+}
+
+
+// (+ 'num ..) -> num
+any doAdd(any ex) {
+   any x, y;
+   long n;
+
+   x = cdr(ex);
+   if (isNil(y = EVAL(car(x))))
+      return Nil;
+   NeedNum(ex,y);
+   n = unBox(y);
+   while (isCell(x = cdr(x))) {
+      if (isNil(y = EVAL(car(x))))
+         return Nil;
+      NeedNum(ex,y);
+      n += unBox(y);
+   }
+   return box(n);
+}
+
+// (abs 'num) -> num
+any doAbs(any ex) {
+   any x;
+
+   x = cdr(ex);
+   if (isNil(x = EVAL(car(x))))
+      return Nil;
+   NeedNum(ex,x);
+   return num(x)<0? box(-unBox(x)) : x;
+}
+
+
+///////////////////////////////////////////////
+//               math.h END
 ///////////////////////////////////////////////
 
 /*** System ***/
@@ -1197,98 +1343,6 @@ void heapAlloc(void) {
    do
       Free(p);
    while (--p >= h->cells);
-}
-
-// (heap 'flg) -> num
-any doHeap(any x) {
-   long n = 0;
-
-   x = cdr(x);
-   if (isNil(EVAL(car(x)))) {
-      heap *h = Heaps;
-      do
-         n += CELLS;
-      while (h = h->next);
-   }
-   else
-      for (x = Avail;  x;  x = car(x))
-         ++n;
-   return box(n * sizeof(cell) / 1024);  // kB
-}
-
-// (env ['lst] | ['sym 'val] ..) -> lst
-any doEnv(any x) {
-   int i;
-   bindFrame *p;
-   cell c1, c2;
-
-   Push(c1,Nil);
-   if (!isCell(x = cdr(x))) {
-      for (p = Env.bind;  p;  p = p->link) {
-         if (p->i == 0) {
-            for (i = p->cnt;  --i >= 0;) {
-               for (x = data(c1); ; x = cdr(x)) {
-                  if (!isCell(x)) {
-                     data(c1) = cons(cons(p->bnd[i].sym, val(p->bnd[i].sym)), data(c1));
-                     break;
-                  }
-                  if (caar(x) == p->bnd[i].sym)
-                     break;
-               }
-            }
-         }
-      }
-   }
-   else {
-      do {
-         Push(c2, EVAL(car(x)));
-         if (isCell(data(c2))) {
-            do
-               data(c1) = cons(
-                  isCell(car(data(c2)))?
-                     cons(caar(data(c2)), cdar(data(c2))) :
-                     cons(car(data(c2)), val(car(data(c2)))),
-                  data(c1) );
-            while (isCell(data(c2) = cdr(data(c2))));
-         }
-         else if (!isNil(data(c2))) {
-            x = cdr(x);
-            data(c1) = cons(cons(data(c2), EVAL(car(x))), data(c1));
-         }
-         drop(c2);
-      }
-      while (isCell(x = cdr(x)));
-   }
-   return Pop(c1);
-}
-
-// (up [cnt] sym ['val]) -> any
-any doUp(any x) {
-   any y, *val;
-   int cnt, i;
-   bindFrame *p;
-
-   x = cdr(x);
-   if (!isNum(y = car(x)))
-      cnt = 1;
-   else
-      cnt = (int)unBox(y),  x = cdr(x),  y = car(x);
-   for (p = Env.bind, val = &val(y);  p;  p = p->link) {
-      if (p->i <= 0) {
-         for (i = 0;  i < p->cnt;  ++i)
-            if (p->bnd[i].sym == y) {
-               if (!--cnt) {
-                  if (isCell(x = cdr(x)))
-                     return p->bnd[i].val = EVAL(car(x));
-                  return p->bnd[i].val;
-               }
-               val = &p->bnd[i].val;
-            }
-      }
-   }
-   if (isCell(x = cdr(x)))
-      return *val = EVAL(car(x));
-   return *val;
 }
 
 /*** Primitives ***/
@@ -1484,19 +1538,6 @@ void err(any ex, any x, char *fmt, ...) {
    longjmp(ErrRst, +1);
 }
 
-// (quit ['any ['any]])
-any doQuit(any x) {
-   any y;
-
-   x = cdr(x),  y = evSym(x);
-   {
-      char msg[bufSize(y)];
-
-      bufString(y, msg);
-      x = isCell(x = cdr(x))?  EVAL(car(x)) : NULL;
-      err(NULL, x, "%s", msg);
-   }
-}
 
 void argError(any ex, any x) {err(ex, x, "Bad argument");}
 void numError(any ex, any x) {err(ex, x, "Number expected");}
@@ -1693,139 +1734,6 @@ any xSym(any x) {
    return i? y : Nil;
 }
 
-// (args) -> flg
-any doArgs(any ex __attribute__((unused))) {
-   return Env.next > 0? T : Nil;
-}
-
-// (next) -> any
-any doNext(any ex __attribute__((unused))) {
-   if (Env.next > 0)
-      return data(Env.arg[--Env.next]);
-   if (Env.next == 0)
-      Env.next = -1;
-   return Nil;
-}
-
-// (arg ['cnt]) -> any
-any doArg(any ex) {
-   long n;
-
-   if (Env.next < 0)
-      return Nil;
-   if (!isCell(cdr(ex)))
-      return data(Env.arg[Env.next]);
-   if ((n = evNum(ex,cdr(ex))) > 0  &&  n <= Env.next)
-      return data(Env.arg[Env.next - n]);
-   return Nil;
-}
-
-// (rest) -> lst
-any doRest(any x) {
-   int i;
-   cell c1;
-
-   if ((i = Env.next) <= 0)
-      return Nil;
-   Push(c1, x = cons(data(Env.arg[--i]), Nil));
-   while (i)
-      x = cdr(x) = cons(data(Env.arg[--i]), Nil);
-   return Pop(c1);
-}
-
-any mkDat(int y, int m, int d) {
-   int n;
-   static char mon[13] = {31,31,28,31,30,31,30,31,31,30,31,30,31};
-
-   if (y<0 || m<1 || m>12 || d<1 || d>mon[m] && (m!=2 || d!=29 || y%4 || !(y%100) && y%400))
-      return Nil;
-   n = (12*y + m - 3) / 12;
-   return box((4404*y+367*m-1094)/12 - 2*n + n/4 - n/100 + n/400 + d);
-}
-
-// (date 'dat) -> (y m d)
-// (date 'y 'm 'd) -> dat | NIL
-// (date '(y m d)) -> dat | NIL
-any doDate(any ex) {
-   any x, z;
-   int y, m, d, n;
-   cell c1;
-
-   x = cdr(ex);
-   if (isNil(z = EVAL(car(x))))
-      return Nil;
-   if (isCell(z))
-      return mkDat(xNum(ex, car(z)),  xNum(ex, cadr(z)),  xNum(ex, caddr(z)));
-   if (!isCell(x = cdr(x))) {
-      if ((n = xNum(ex,z)) < 0)
-         return Nil;
-      y = (100*n - 20) / 3652425;
-      n += (y - y/4);
-      y = (100*n - 20) / 36525;
-      n -= 36525*y / 100;
-      m = (10*n - 5) / 306;
-      d = (10*n - 306*m + 5) / 10;
-      if (m < 10)
-         m += 3;
-      else
-         ++y,  m -= 9;
-      Push(c1, cons(box(d), Nil));
-      data(c1) = cons(box(m), data(c1));
-      data(c1) = cons(box(y), data(c1));
-      return Pop(c1);
-   }
-   y = xNum(ex,z);
-   m = evNum(ex,x);
-   return mkDat(y, m, evNum(ex,cdr(x)));
-}
-
-// (cmd ['any]) -> sym
-any doCmd(any x) {
-   if (isNil(x = evSym(cdr(x))))
-      return mkStr(AV0);
-   bufString(x, AV0);
-   return x;
-}
-
-// (argv [var ..] [. sym]) -> lst|sym
-any doArgv(any ex) {
-   any x, y;
-   char **p;
-   cell c1;
-
-   if (*(p = AV) && strcmp(*p,"-") == 0)
-      ++p;
-   if (isNil(x = cdr(ex))) {
-      if (!*p)
-         return Nil;
-      Push(c1, x = cons(mkStr(*p++), Nil));
-      while (*p)
-         x = cdr(x) = cons(mkStr(*p++), Nil);
-      return Pop(c1);
-   }
-   do {
-      if (!isCell(x)) {
-         NeedSymb(ex,x);
-         CheckVar(ex,x);
-         if (!*p)
-            return val(x) = Nil;
-         Push(c1, y = cons(mkStr(*p++), Nil));
-         while (*p)
-            y = cdr(y) = cons(mkStr(*p++), Nil);
-         return val(x) = Pop(c1);
-      }
-      y = car(x);
-      NeedVar(ex,y);
-      CheckVar(ex,y);
-      val(y) = *p? mkStr(*p++) : Nil;
-   } while (!isNil(x = cdr(x)));
-   return val(y);
-}
-
-// (opt) -> sym
-any doOpt(any ex __attribute__((unused))) {
-   return *AV && strcmp(*AV,"-")? mkStr(*AV++) : Nil;
-}
 
 any loadAll(any ex) {
    any x = Nil;
