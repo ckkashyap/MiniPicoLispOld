@@ -476,27 +476,6 @@ any doHide(any ex) {
    return Nil;
 }
 
-void pack(any x, int *i, word *p, any *q, cell *cp) {
-   int c, j;
-   word w;
-
-   if (isCell(x))
-      do
-         pack(car(x), i, p, q, cp);
-      while (isCell(x = cdr(x)));
-   if (isNum(x)) {
-      char buf[BITS/2], *b = buf;
-
-      bufNum(buf, unBox(x));
-      do
-         putByte(*b++, i, p, q, cp);
-      while (*b);
-   }
-   else if (!isNil(x))
-      for (x = name(x), c = getByte1(&j, &w, &x); c; c = getByte(&j, &w, &x))
-         putByte(c, i, p, q, cp);
-}
-
 ///////////////////////////////////////////////
 //               sym.c - END
 ///////////////////////////////////////////////
@@ -508,10 +487,6 @@ void pack(any x, int *i, word *p, any *q, cell *cp) {
 
 static any read0(bool);
 
-static int StrI;
-static cell StrCell, *StrP;
-static word StrW;
-static void (*PutSave)(int);
 static char Delim[] = " \t\n\r\"'(),[]`~{}";
 
 static void openErr(any ex, char *s) {err(ex, NULL, "%s open: %s", s, strerror(errno));}
@@ -582,23 +557,6 @@ void rdOpen(any ex, any x, inFrame *f) {
          fseek(f->fp, 0L, SEEK_SET);
       }
       else if (!(f->fp = fopen(nm, "r")))
-         openErr(ex, nm);
-   }
-}
-
-void wrOpen(any ex, any x, outFrame *f) {
-   NeedSymb(ex,x);
-   if (isNil(x))
-      f->fp = stdout;
-   else {
-      char nm[pathSize(x)];
-
-      pathString(x,nm);
-      if (nm[0] == '+') {
-         if (!(f->fp = fopen(nm+1, "a")))
-            openErr(ex, nm);
-      }
-      else if (!(f->fp = fopen(nm, "w")))
          openErr(ex, nm);
    }
 }
@@ -984,21 +942,6 @@ static any parse(any x, bool skp) {
    return x;
 }
 
-static void putString(int c) {
-   putByte(c, &StrI, &StrW, &StrP, &StrCell);
-}
-
-void begString(void) {
-   putByte0(&StrI, &StrW, &StrP);
-   PutSave = Env.put,  Env.put = putString;
-}
-
-any endString(void) {
-   Env.put = PutSave;
-   StrP = popSym(StrI, StrW, StrP, &StrCell);
-   return StrI? StrP : Nil;
-}
-
 any load(any ex, int pr, any x) {
    cell c1, c2;
    inFrame f;
@@ -1334,9 +1277,8 @@ any doMeth(any ex) {
 
 // (bye 'num|NIL)
 any doBye(any ex) {
-   any x = EVAL(cadr(ex));
-
-   bye(isNil(x)? 0 : xNum(ex,x));
+   bye(0);
+   return ex;
 }
 ///////////////////////////////////////////////
 //               flow.c END
@@ -1517,20 +1459,9 @@ void giveup(char *msg) {
 }
 
 void bye(int n) {
-   static bool b;
-
-   if (!b) {
-      b = YES;
-      unwind(NULL);
-      prog(val(Bye));
-   }
    exit(n);
 }
 
-void execError(char *s) {
-   fprintf(stderr, "%s: Can't exec\n", s);
-   exit(127);
-}
 
 /* Allocate memory */
 void *alloc(void *p, size_t siz) {
@@ -1659,90 +1590,10 @@ bool equal(any x, any y) {
    return res;
 }
 
-long compare(any x, any y) {
-   any a, b;
-
-   if (x == y)
-      return 0;
-   if (isNil(x))
-      return -1;
-   if (x == T)
-      return +1;
-   if (isNum(x)) {
-      if (!isNum(y))
-         return isNil(y)? +1 : -1;
-      return num(x) - num(y);
-   }
-   if (isSym(x)) {
-      int c, d, i, j;
-      word w, v;
-
-      if (isNum(y) || isNil(y))
-         return +1;
-      if (isCell(y) || y == T)
-         return -1;
-      a = name(x),  b = name(y);
-      if (a == txt(0) && b == txt(0))
-         return (long)x - (long)y;
-      if ((c = getByte1(&i, &w, &a)) == (d = getByte1(&j, &v, &b)))
-         do
-            if (c == 0)
-               return 0;
-         while ((c = getByte(&i, &w, &a)) == (d = getByte(&j, &v, &b)));
-      return c - d;
-   }
-   if (!isCell(y))
-      return y == T? -1 : +1;
-   a = x, b = y;
-   for (;;) {
-      long n;
-
-      if (n = compare(car(x),car(y)))
-         return n;
-      if (!isCell(x = cdr(x)))
-         return compare(x, cdr(y));
-      if (!isCell(y = cdr(y)))
-         return y == T? -1 : +1;
-      if (x == a && y == b)
-         return 0;
-   }
-}
 
 /*** Error handling ***/
 void err(any ex, any x, char *fmt, ...) {
-   va_list ap;
-   char msg[240];
-   outFrame f;
-
-   Chr = 0;
-   Env.brk = NO;
-   f.fp = stderr;
-   pushOutFiles(&f);
-   while (*AV  &&  strcmp(*AV,"-") != 0)
-      ++AV;
-   if (ex)
-      outString("!? "), print(val(Up) = ex), newline();
-   if (x)
-      print(x), outString(" -- ");
-   va_start(ap,fmt);
-   vsnprintf(msg, sizeof(msg), fmt, ap);
-   va_end(ap);
-   if (msg[0]) {
-      outString(msg), newline();
-      val(Msg) = mkStr(msg);
-      if (!isNil(val(Err)) && !Jam)
-         Jam = YES,  prog(val(Err)),  Jam = NO;
-      load(NULL, '?', Nil);
-   }
-   unwind(NULL);
-   Env.stack = NULL;
-   Env.next = -1;
-   Env.make = Env.yoke = NULL;
-   Env.parser = NULL;
-   Trace = 0;
-   Env.put = putStdout;
-   Env.get = getStdin;
-   longjmp(ErrRst, +1);
+    bye(0);
 }
 
 
@@ -1754,58 +1605,6 @@ void atomError(any ex, any x) {err(ex, x, "Atom expected");}
 void lstError(any ex, any x) {err(ex, x, "List expected");}
 void varError(any ex, any x) {err(ex, x, "Variable expected");}
 void protError(any ex, any x) {err(ex, x, "Protected symbol");}
-
-void unwind(catchFrame *catch) {
-   any x;
-   int i, j, n;
-   bindFrame *p;
-   catchFrame *q;
-
-   while (q = CatchPtr) {
-      while (p = Env.bind) {
-         if ((i = p->i) < 0) {
-            j = i, n = 0;
-            while (++n, ++j && (p = p->link))
-               if (p->i >= 0 || p->i < i)
-                  --j;
-            do {
-               for (p = Env.bind, j = n;  --j;  p = p->link);
-               if (p->i < 0  &&  ((p->i -= i) > 0? (p->i = 0) : p->i) == 0)
-                  for (j = p->cnt;  --j >= 0;) {
-                     x = val(p->bnd[j].sym);
-                     val(p->bnd[j].sym) = p->bnd[j].val;
-                     p->bnd[j].val = x;
-                  }
-            } while (--n);
-         }
-         if (Env.bind == q->env.bind)
-            break;
-         if (Env.bind->i == 0)
-            for (i = Env.bind->cnt;  --i >= 0;)
-               val(Env.bind->bnd[i].sym) = Env.bind->bnd[i].val;
-         Env.bind = Env.bind->link;
-      }
-      while (Env.inFrames != q->env.inFrames)
-         popInFiles();
-      while (Env.outFrames != q->env.outFrames)
-         popOutFiles();
-      Env = q->env;
-      EVAL(q->fin);
-      CatchPtr = q->link;
-      if (q == catch)
-         return;
-   }
-   while (Env.bind) {
-      if (Env.bind->i == 0)
-         for (i = Env.bind->cnt;  --i >= 0;)
-            val(Env.bind->bnd[i].sym) = Env.bind->bnd[i].val;
-      Env.bind = Env.bind->link;
-   }
-   while (Env.inFrames)
-      popInFiles();
-   while (Env.outFrames)
-      popOutFiles();
-}
 
 /*** Evaluation ***/
 any evExpr(any expr, any x) {
@@ -1913,34 +1712,6 @@ any evList(any ex) {
          return evExpr(foo, cdr(ex));
    }
 }
-
-/* Evaluate number */
-long evNum(any ex, any x) {return xNum(ex, EVAL(car(x)));}
-
-long xNum(any ex, any x) {
-   NeedNum(ex,x);
-   return unBox(x);
-}
-
-/* Evaluate any to sym */
-any evSym(any x) {return xSym(EVAL(car(x)));}
-
-any xSym(any x) {
-   int i;
-   word w;
-   any y;
-   cell c1, c2;
-
-   if (isSymb(x))
-      return x;
-   Push(c1,x);
-   putByte0(&i, &w, &y);
-   i = 0,  pack(x, &i, &w, &y, &c2);
-   y = popSym(i, w, y, &c2);
-   drop(c1);
-   return i? y : Nil;
-}
-
 
 any loadAll(any ex) {
    any x = Nil;
