@@ -4,6 +4,7 @@
 
 #include "pico.h"
 
+any doHide(any);
 static any read0(bool);
 
 static int StrI;
