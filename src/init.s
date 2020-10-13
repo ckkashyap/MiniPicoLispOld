@@ -19,7 +19,6 @@ meth [Meth] {doMeth}
 *Bye [Bye] NIL  # Last unremovable symbol
 
 ### System Functions ###
-abs {doAbs}
 bye {doBye}
 + {doAdd}
 de {doDe}
