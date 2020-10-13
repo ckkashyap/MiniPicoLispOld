@@ -1275,6 +1275,43 @@ any doMeth(any ex) {
     return ex;
 }
 
+
+// (let sym 'any . prg) -> any
+// (let (sym 'any ..) . prg) -> any
+any doLet(any x) {
+   any y;
+
+   x = cdr(x);
+   if (!isCell(y = car(x))) {
+      bindFrame f;
+
+      x = cdr(x),  Bind(y,f),  val(y) = EVAL(car(x));
+      x = prog(cdr(x));
+      Unbind(f);
+   }
+   else {
+      struct {  // bindFrame
+         struct bindFrame *link;
+         int i, cnt;
+         struct {any sym; any val;} bnd[(length(y)+1)/2];
+      } f;
+
+      f.link = Env.bind,  Env.bind = (bindFrame*)&f;
+      f.i = f.cnt = 0;
+      do {
+         f.bnd[f.cnt].sym = car(y);
+         f.bnd[f.cnt].val = val(car(y));
+         ++f.cnt;
+         val(car(y)) = EVAL(cadr(y));
+      } while (isCell(y = cddr(y)));
+      x = prog(cdr(x));
+      while (--f.cnt >= 0)
+         val(f.bnd[f.cnt].sym) = f.bnd[f.cnt].val;
+      Env.bind = f.link;
+   }
+   return x;
+}
+
 // (bye 'num|NIL)
 any doBye(any ex) {
    bye(0);
