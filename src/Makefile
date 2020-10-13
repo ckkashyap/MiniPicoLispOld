@@ -26,8 +26,8 @@ $(bin)/picolisp: $(picoFiles:.c=.o)
 
 $(picoFiles:.c=.o): pico.h sym.d rom.d ram.d
 
-sym.d rom.d ram.d: gen3m init.s lib.s pilog.s
-	./gen3m 0 init.s lib.s pilog.s
+sym.d rom.d ram.d: gen3m init.s
+	./gen3m 0 init.s
 
 gen3m: gen3m.c
 	$(CC) -o gen3m gen3m.c

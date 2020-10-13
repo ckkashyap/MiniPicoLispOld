@@ -103,14 +103,6 @@ static void gc(long c) {
    }
 }
 
-// (gc ['num]) -> num | NIL
-any doGc(any x) {
-   x = cdr(x),  x = EVAL(car(x));
-   val(At) = val(At2) = Nil;
-   gc(isNum(x)? unBox(x) * 1024 / sizeof(cell) : CELLS);  // kB
-   return x;
-}
-
 /* Construct a cell */
 any cons(any x, any y) {
    cell *p;

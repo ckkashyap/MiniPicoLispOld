@@ -30,25 +30,7 @@ any doQuote(any x) {return cdr(x);}
 // (def 'sym 'any) -> sym
 // (def 'sym 'sym 'any) -> sym
 any doDef(any ex) {
-   any x, y;
-   cell c1, c2, c3;
-
-   x = cdr(ex),  Push(c1, EVAL(car(x)));
-   NeedSymb(ex,data(c1));
-   x = cdr(x),  Push(c2, EVAL(car(x)));
-   if (!isCell(cdr(x))) {
-      CheckVar(ex,data(c1));
-      if (!isNil(y = val(data(c1)))  &&  y != data(c1)  &&  !equal(data(c2), y))
-         redefMsg(data(c1),NULL);
-      val(data(c1)) = data(c2);
-   }
-   else {
-      x = cdr(x),  Push(c3, EVAL(car(x)));
-      if (!isNil(y = get(data(c1), data(c2)))  &&  !equal(data(c3), y))
-         redefMsg(data(c1), data(c2));
-      put(data(c1), data(c2), data(c3));
-   }
-   return Pop(c1);
+   return ex;
 }
 
 // (de sym . any) -> sym
