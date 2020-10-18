@@ -1,7 +1,3 @@
-/* 12jul15abu
- * (c) Software Lab. Alexander Burger
- */
-
 #include "pico.h"
 
 /* Globals */
@@ -26,9 +22,7 @@ any __attribute__ ((__aligned__(2*WORD))) Ram[] = {
    #include "ram.d"
 };
 
-static bool Jam;
 static jmp_buf ErrRst;
-
 
 ///////////////////////////////////////////////
 //               sym.c
@@ -55,7 +49,6 @@ static byte Ascii7[] = {
    0, 85,   0, 86,   0, 87,   0, 88,   0,  89,   0,  90,   0,  91,   0,  92,
    0, 93,   0, 94,   0, 95,   0, 96,   0, 123,   0, 124,   0, 125,   0, 126
 };
-
 
 int firstByte(any s) {
    int c;
@@ -1592,6 +1585,8 @@ bool equal(any x, any y) {
 /*** Error handling ***/
 void err(any ex, any x, char *fmt, ...) {
     bye(0);
+    if (ex == x) bye(1);
+    if (fmt == NULL) bye(1);
 }
 
 
