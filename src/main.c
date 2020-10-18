@@ -1172,45 +1172,6 @@ any symToNum(any s, int scl, int sep, int ign) {
    return box(sign? -n : n);
 }
 
-/* Make symbol from number */
-any numToSym(any x, int scl, int sep, int ign) {
-   int i;
-   word w;
-   cell c1;
-   long n;
-   byte *p, buf[BITS/2];
-
-   n = unBox(x);
-   putByte0(&i, &w, &x);
-   if (n < 0) {
-      n = -n;
-      putByte('-', &i, &w, &x, &c1);
-   }
-   for (p = buf;;) {
-      *p = n % 10;
-      if ((n /= 10) == 0)
-         break;
-      ++p;
-   }
-   if ((scl = p - buf - scl) < 0) {
-      putByte('0', &i, &w, &x, &c1);
-      putByte(sep, &i, &w, &x, &c1);
-      while (scl < -1)
-         putByte('0', &i, &w, &x, &c1),  ++scl;
-   }
-   for (;;) {
-      putByte(*p + '0', &i, &w, &x, &c1);
-      if (--p < buf)
-         return popSym(i, w, x, &c1);
-      if (scl == 0)
-         putByte(sep, &i, &w, &x, &c1);
-      else if (ign  &&  scl > 0  &&  scl % 3 == 0)
-         putByte(ign, &i, &w, &x, &c1);
-      --scl;
-   }
-}
-
-
 // (+ 'num ..) -> num
 any doAdd(any ex) {
    any x, y;
