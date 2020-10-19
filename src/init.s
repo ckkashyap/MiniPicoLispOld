@@ -23,6 +23,9 @@ bye {doBye}
 + {doAdd}
 de {doDe}
 let {doLet}
-prin {doPrin}
+prinl {doPrin}
 do {doDo}
 for {doFor}
+setq {doSetq}
+make {doMake}
+link {doLink}

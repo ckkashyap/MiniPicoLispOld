@@ -24,7 +24,7 @@ $(bin)/picolisp: $(picoFiles:.c=.o)
 	$(CC) -o $(bin)/picolisp $(picoFiles:.c=.o) -lc -lm
 	strip $(bin)/picolisp
 
-$(picoFiles:.c=.o): pico.h sym.d rom.d ram.d
+$(picoFiles:.c=.o): sym.d rom.d ram.d
 
 sym.d rom.d ram.d: gen3m init.s
 	./gen3m 0 init.s

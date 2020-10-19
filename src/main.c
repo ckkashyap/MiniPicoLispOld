@@ -622,6 +622,66 @@ any doHide(any ex) {
    return Nil;
 }
 
+
+any doCons(any x) {
+   any y;
+   cell c1;
+
+   x = cdr(x);
+   Push(c1, y = cons(EVAL(car(x)),Nil));
+   while (isCell(cdr(x = cdr(x))))
+      y = cdr(y) = cons(EVAL(car(x)),Nil);
+   cdr(y) = EVAL(car(x));
+   return Pop(c1);
+}
+
+
+// (setq var 'any ..) -> any
+any doSetq(any ex) {
+   any x, y;
+
+   x = cdr(ex);
+   do {
+      y = car(x),  x = cdr(x);
+      NeedVar(ex,y);
+      CheckVar(ex,y);
+      val(y) = EVAL(car(x));
+   } while (isCell(x = cdr(x)));
+   return val(y);
+}
+static void makeError(any ex) {err(ex, NULL, "Not making");}
+
+// (link 'any ..) -> any
+any doLink(any x) {
+   any y;
+
+   if (!Env.make)
+      makeError(x);
+   x = cdr(x);
+   do {
+      y = EVAL(car(x));
+      Env.make = &cdr(*Env.make = cons(y, Nil));
+   } while (isCell(x = cdr(x)));
+   return y;
+}
+
+// (make .. [(made 'lst ..)] .. [(link 'any ..)] ..) -> any
+any doMake(any x) {
+   any *make, *yoke;
+   cell c1;
+
+   Push(c1, Nil);
+   make = Env.make;
+   yoke = Env.yoke;
+   Env.make = Env.yoke = &data(c1);
+   while (isCell(x = cdr(x)))
+      if (isCell(car(x)))
+         evList(car(x));
+   Env.yoke = yoke;
+   Env.make = make;
+   return Pop(c1);
+}
+
 ///////////////////////////////////////////////
 //               sym.c - END
 ///////////////////////////////////////////////
@@ -1278,6 +1338,7 @@ any doPrin(any x) {
 
    while (isCell(x = cdr(x)))
       prin(y = EVAL(car(x)));
+   newline();
    return y;
 }
 
@@ -1702,7 +1763,6 @@ static void gc(long c) {
    heap *h;
    int i;
 
-printf("GC called\n");
    h = Heaps;
    do {
       p = h->cells + CELLS-1;
@@ -1823,7 +1883,6 @@ any consName(word w, any n) {
 ///////////////////////////////////////////////
 //               gc.c END
 ///////////////////////////////////////////////
-
 
 
 
