@@ -200,7 +200,6 @@ any load(any,int,any);
 any loadAll(any);
 any method(any);
 any mkChar(int);
-any mkChar2(int,int);
 any mkSym(byte*);
 any mkStr(char*);
 any mkTxt(int);
@@ -484,12 +483,6 @@ any mkTxt(int c) {return txt(Ascii6[c & 127]);}
 
 any mkChar(int c) {
    return consSym(NULL, Ascii6[c & 127]);
-}
-
-any mkChar2(int c, int d) {
-   c = Ascii6[c & 127];
-   d = Ascii6[d & 127];
-   return consSym(NULL, d << (c & 1? 7 : 6) | c);
 }
 
 void putByte0(int *i, word *p, any *q) {
