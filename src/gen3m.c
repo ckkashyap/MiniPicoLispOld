@@ -73,11 +73,11 @@ static void mkSym(int *ix, char ***list, char *mem, char *name, char *value) {
    word w;
 
    bin = NO;
-   w = Ascii6[*name++ & 127];
-   i = 6;
+   w = *name++ & 127;
+   i = 8;
    while (*name) {
-      c = Ascii6[*name++ & 127];
-      d = 6;
+      c = *name++ & 127;
+      d = 8;
 
       if (i != Bits)
          w |= (word)c << i;

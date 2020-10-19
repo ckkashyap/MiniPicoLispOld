@@ -400,7 +400,7 @@ int firstByte(any s) {
    if (isNil(s))
       return 0;
    c = (int)(isTxt(s = name(s))? (word)s >> 1 : (word)tail(s));
-   return Ascii7[c & (c & 1? 127 : 63)];
+   return c & 127;
 }
 
 int secondByte(any s) {
@@ -409,8 +409,8 @@ int secondByte(any s) {
    if (isNil(s))
       return 0;
    c = (int)(isTxt(s = name(s))? (word)s >> 1 : (word)tail(s));
-   c >>= c & 1? 7 : 6;
-   return Ascii7[c & (c & 1? 127 : 63)];
+   c >>= 8;
+   return c & 127;
 }
 
 int getByte1(int *i, word *p, any *q) {
@@ -420,10 +420,9 @@ int getByte1(int *i, word *p, any *q) {
       *i = BITS-1,  *p = (word)*q >> 1,  *q = NULL;
    else
       *i = BITS,  *p = (word)tail(*q),  *q = val(*q);
-   if (*p & 1)
-      c = Ascii7[*p & 127],  *p >>= 7,  *i -= 7;
-   else
-      c = Ascii7[*p & 63],  *p >>= 6,  *i -= 6;
+
+   c = *p & 127, *p >>= 8, *i -= 8;
+
    return c;
 }
 
@@ -438,51 +437,31 @@ int getByte(int *i, word *p, any *q) {
       else
          *i = BITS,  *p = (word)tail(*q),  *q = val(*q);
    }
-   if (*p & 1) {
-      c = *p & 127,  *p >>= 7;
-      if (*i >= 7)
-         *i -= 7;
+   if (1) {
+      c = *p & 127,  *p >>= 8;
+      if (*i >= 8)
+         *i -= 8;
       else if (isNum(*q)) {
          *p = (word)*q >> 2,  *q = NULL;
          c |= *p << *i;
-         *p >>= 7 - *i;
+         *p >>= 8 - *i;
          *i += BITS-9;
       }
       else {
          *p = (word)tail(*q),  *q = val(*q);
          c |= *p << *i;
-         *p >>= 7 - *i;
-         *i += BITS-7;
+         *p >>= 8 - *i;
+         *i += BITS-8;
       }
       c &= 127;
    }
-   else {
-      c = *p & 63,  *p >>= 6;
-      if (*i >= 6)
-         *i -= 6;
-      else if (!*q)
-         return 0;
-      else if (isNum(*q)) {
-         *p = (word)*q >> 2,  *q = NULL;
-         c |= *p << *i;
-         *p >>= 6 - *i;
-         *i += BITS-8;
-      }
-      else {
-         *p = (word)tail(*q),  *q = val(*q);
-         c |= *p << *i;
-         *p >>= 6 - *i;
-         *i += BITS-6;
-      }
-      c &= 63;
-   }
-   return Ascii7[c];
+   return c;
 }
 
-any mkTxt(int c) {return txt(Ascii6[c & 127]);}
+any mkTxt(int c) {return txt(c & 127);}
 
 any mkChar(int c) {
-   return consSym(NULL, Ascii6[c & 127]);
+   return consSym(NULL, c & 127);
 }
 
 void putByte0(int *i, word *p, any *q) {
@@ -490,13 +469,14 @@ void putByte0(int *i, word *p, any *q) {
 }
 
 void putByte1(int c, int *i, word *p, any *q) {
-   *p = Ascii6[c & 127];
-   *i = 6;
+   *p = c & 127;
+   *i = 8;
    *q = NULL;
 }
 
 void putByte(int c, int *i, word *p, any *q, cell *cp) {
-   int d = (c = Ascii6[c & 127]) & 1? 7 : 6;
+   c = c & 127;
+   int d = 8;
 
    if (*i != BITS)
       *p |= (word)c << *i;
@@ -2097,6 +2077,7 @@ any loadAll(any ex) {
 int main(int ac, char *av[]) {
    int i;
    char *p;
+   printf("%d BITS", BITS);
 
    AV0 = *av++;
    AV = av;
