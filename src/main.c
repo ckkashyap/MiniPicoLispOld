@@ -303,7 +303,7 @@ int firstByte(any s) {
 
    if (isNil(s))
       return 0;
-   c = (int)(isTxt(s = name(s))? (word)s >> 1 : (word)tail(s));
+   c = (word)s;
    return c & 127;
 }
 
