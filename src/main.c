@@ -490,7 +490,8 @@ void putByte0(int *i, word *p, any *q) {
 }
 
 void putByte1(int c, int *i, word *p, any *q) {
-   *i = (*p = Ascii6[c & 127]) & 1? 7 : 6;
+   *p = Ascii6[c & 127];
+   *i = 6;
    *q = NULL;
 }
 
