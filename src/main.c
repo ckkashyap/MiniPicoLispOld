@@ -193,7 +193,6 @@ void getStdin(void);
 void giveup(char*) __attribute__ ((noreturn));
 void heapAlloc(void);
 any intern(any,any[2]);
-bool isBlank(any);
 any isIntern(any,any[2]);
 void lstError(any,any) __attribute__ ((noreturn));
 any load(any,int,any);
@@ -223,12 +222,10 @@ void pushInFiles(inFrame*);
 void pushOutFiles(outFrame*);
 void put(any,any,any);
 void putByte(int,int*,word*,any*,cell*);
-void putByte0(int*,word*,any*);
 void putByte1(int,int*,word*,any*);
 void putStdout(int);
 void rdOpen(any,any,inFrame*);
 any read1(int);
-int secondByte(any);
 void space(void);
 int symBytes(any);
 void symError(any,any) __attribute__ ((noreturn));
@@ -307,23 +304,10 @@ int firstByte(any s) {
    return c & 127;
 }
 
-int secondByte(any s) {
-   int c;
-
-   if (isNil(s))
-      return 0;
-   c = (int)(isTxt(s = name(s))? (word)s >> 1 : (word)tail(s));
-   c >>= 8;
-   return c & 127;
-}
-
 int getByte1(int *i, word *p, any *q) {
    int c;
 
-   if (isTxt(*q))
-      *i = BITS-1,  *p = (word)*q >> 1,  *q = NULL;
-   else
-      *i = BITS,  *p = (word)tail(*q),  *q = val(*q);
+   *i = BITS - 1, *p = (word)*q >> 1, *q = NULL;
 
    c = *p & 127, *p >>= 8, *i -= 8;
 
@@ -366,10 +350,6 @@ any mkTxt(int c) {return txt(c & 127);}
 
 any mkChar(int c) {
    return consSym(NULL, c & 127);
-}
-
-void putByte0(int *i, word *p, any *q) {
-   *i = 0,  *p = 0,  *q = NULL;
 }
 
 void putByte1(int c, int *i, word *p, any *q) {
@@ -628,21 +608,6 @@ any mkSym(byte *s) {
 /* Make string */
 any mkStr(char *s) {return s && *s? mkSym((byte*)s) : Nil;}
 
-bool isBlank(any x) {
-   int i, c;
-   word w;
-
-   if (!isSymb(x))
-      return NO;
-   if (isNil(x))
-      return YES;
-   x = name(x);
-   for (c = getByte1(&i, &w, &x);  c;  c = getByte(&i, &w, &x))
-      if (c > ' ')
-         return NO;
-   return YES;
-}
-
 
 // (==== ['sym ..]) -> NIL
 any doHide(any ex) {
@@ -679,7 +644,7 @@ int bufSize(any x) {return symBytes(x) + 1;}
 int pathSize(any x) {
    int c = firstByte(x);
 
-   if (c != '@'  &&  (c != '+' || secondByte(x) != '@'))
+   if (c != '@'  &&  (c != '+'))
       return bufSize(x);
    if (!Home)
       return symBytes(x);
@@ -1499,6 +1464,196 @@ any doBye(any ex) {
    bye(0);
    return ex;
 }
+
+
+// (for sym 'num ['any | (NIL 'any . prg) | (T 'any . prg) ..]) -> any
+// (for sym|(sym2 . sym) 'lst ['any | (NIL 'any . prg) | (T 'any . prg) ..]) -> any
+// (for (sym|(sym2 . sym) 'any1 'any2 [. prg]) ['any | (NIL 'any . prg) | (T 'any . prg) ..]) -> any
+any doFor(any x) {
+   any y, body, cond, a;
+   cell c1;
+   struct {  // bindFrame
+      struct bindFrame *link;
+      int i, cnt;
+      struct {any sym; any val;} bnd[2];
+   } f;
+
+   f.link = Env.bind,  Env.bind = (bindFrame*)&f;
+   f.i = 0;
+   if (!isCell(y = car(x = cdr(x))) || !isCell(cdr(y))) {
+      if (!isCell(y)) {
+         f.cnt = 1;
+         f.bnd[0].sym = y;
+         f.bnd[0].val = val(y);
+      }
+      else {
+         f.cnt = 2;
+         f.bnd[0].sym = cdr(y);
+         f.bnd[0].val = val(cdr(y));
+         f.bnd[1].sym = car(y);
+         f.bnd[1].val = val(car(y));
+         val(f.bnd[1].sym) = Zero;
+      }
+      y = Nil;
+      x = cdr(x),  Push(c1, EVAL(car(x)));
+      if (isNum(data(c1)))
+         val(f.bnd[0].sym) = Zero;
+      body = x = cdr(x);
+      for (;;) {
+         if (isNum(data(c1))) {
+            val(f.bnd[0].sym) = (any)(num(val(f.bnd[0].sym)) + 4);
+            if (num(val(f.bnd[0].sym)) > num(data(c1)))
+               break;
+         }
+         else {
+            if (!isCell(data(c1)))
+               break;
+            val(f.bnd[0].sym) = car(data(c1));
+            if (!isCell(data(c1) = cdr(data(c1))))
+               data(c1) = Nil;
+         }
+         if (f.cnt == 2)
+            val(f.bnd[1].sym) = (any)(num(val(f.bnd[1].sym)) + 4);
+         do {
+            if (!isNum(y = car(x))) {
+               if (isSym(y))
+                  y = val(y);
+               else if (isNil(car(y))) {
+                  y = cdr(y);
+                  if (isNil(a = EVAL(car(y)))) {
+                     y = prog(cdr(y));
+                     goto for1;
+                  }
+                  val(At) = a;
+                  y = Nil;
+               }
+               else if (car(y) == T) {
+                  y = cdr(y);
+                  if (!isNil(a = EVAL(car(y)))) {
+                     val(At) = a;
+                     y = prog(cdr(y));
+                     goto for1;
+                  }
+                  y = Nil;
+               }
+               else
+                  y = evList(y);
+            }
+         } while (isCell(x = cdr(x)));
+         x = body;
+      }
+   for1:
+      drop(c1);
+      if (f.cnt == 2)
+         val(f.bnd[1].sym) = f.bnd[1].val;
+      val(f.bnd[0].sym) = f.bnd[0].val;
+      Env.bind = f.link;
+      return y;
+   }
+   if (!isCell(car(y))) {
+      f.cnt = 1;
+      f.bnd[0].sym = car(y);
+      f.bnd[0].val = val(car(y));
+   }
+   else {
+      f.cnt = 2;
+      f.bnd[0].sym = cdar(y);
+      f.bnd[0].val = val(cdar(y));
+      f.bnd[1].sym = caar(y);
+      f.bnd[1].val = val(caar(y));
+      val(f.bnd[1].sym) = Zero;
+   }
+   y = cdr(y);
+   val(f.bnd[0].sym) = EVAL(car(y));
+   y = cdr(y),  cond = car(y),  y = cdr(y);
+   Push(c1,Nil);
+   body = x = cdr(x);
+   for (;;) {
+      if (f.cnt == 2)
+         val(f.bnd[1].sym) = (any)(num(val(f.bnd[1].sym)) + 4);
+      if (isNil(a = EVAL(cond)))
+         break;
+      val(At) = a;
+      do {
+         if (!isNum(data(c1) = car(x))) {
+            if (isSym(data(c1)))
+               data(c1) = val(data(c1));
+            else if (isNil(car(data(c1)))) {
+               data(c1) = cdr(data(c1));
+               if (isNil(a = EVAL(car(data(c1))))) {
+                  data(c1) = prog(cdr(data(c1)));
+                  goto for2;
+               }
+               val(At) = a;
+               data(c1) = Nil;
+            }
+            else if (car(data(c1)) == T) {
+               data(c1) = cdr(data(c1));
+               if (!isNil(a = EVAL(car(data(c1))))) {
+                  val(At) = a;
+                  data(c1) = prog(cdr(data(c1)));
+                  goto for2;
+               }
+               data(c1) = Nil;
+            }
+            else
+               data(c1) = evList(data(c1));
+         }
+      } while (isCell(x = cdr(x)));
+      if (isCell(y))
+         val(f.bnd[0].sym) = prog(y);
+      x = body;
+   }
+for2:
+   if (f.cnt == 2)
+      val(f.bnd[1].sym) = f.bnd[1].val;
+   val(f.bnd[0].sym) = f.bnd[0].val;
+   Env.bind = f.link;
+   return Pop(c1);
+}
+// (do 'flg|num ['any | (NIL 'any . prg) | (T 'any . prg) ..]) -> any
+any doDo(any x) {
+   any f, y, z, a;
+
+   x = cdr(x);
+   if (isNil(f = EVAL(car(x))))
+      return Nil;
+   if (isNum(f) && num(f) < 0)
+      return Nil;
+   x = cdr(x),  z = Nil;
+   for (;;) {
+      if (isNum(f)) {
+         if (f == Zero)
+            return z;
+         f = (any)(num(f) - 4);
+      }
+      y = x;
+      do {
+         if (!isNum(z = car(y))) {
+            if (isSym(z))
+               z = val(z);
+            else if (isNil(car(z))) {
+               z = cdr(z);
+               if (isNil(a = EVAL(car(z))))
+                  return prog(cdr(z));
+               val(At) = a;
+               z = Nil;
+            }
+            else if (car(z) == T) {
+               z = cdr(z);
+               if (!isNil(a = EVAL(car(z)))) {
+                  val(At) = a;
+                  return prog(cdr(z));
+               }
+               z = Nil;
+            }
+            else
+               z = evList(z);
+         }
+      } while (isCell(y = cdr(y)));
+   }
+}
+
 ///////////////////////////////////////////////
 //               flow.c END
 ///////////////////////////////////////////////
@@ -1547,6 +1702,7 @@ static void gc(long c) {
    heap *h;
    int i;
 
+printf("GC called\n");
    h = Heaps;
    do {
       p = h->cells + CELLS-1;

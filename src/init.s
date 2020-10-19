@@ -24,3 +24,5 @@ bye {doBye}
 de {doDe}
 let {doLet}
 prin {doPrin}
+do {doDo}
+for {doFor}
