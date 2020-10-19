@@ -241,41 +241,6 @@ void wrOpen(any,any,outFrame*);
 long xNum(any,any);
 any xSym(any);
 
-/* List element access */
-static inline any nCdr(int n, any x) {
-   while (--n >= 0)
-      x = cdr(x);
-   return x;
-}
-
-static inline any nth(int n, any x) {
-   if (--n < 0)
-      return Nil;
-   return nCdr(n,x);
-}
-
-static inline any getn(any x, any y) {
-   if (isNum(x)) {
-      long n = unBox(x);
-
-      if (n < 0) {
-         while (++n)
-            y = cdr(y);
-         return cdr(y);
-      }
-      if (n == 0)
-         return Nil;
-      while (--n)
-         y = cdr(y);
-      return car(y);
-   }
-   do
-      if (isCell(car(y)) && x == caar(y))
-         return cdar(y);
-   while (isCell(y = cdr(y)));
-   return Nil;
-}
-
 /* List length calculation */
 static inline int length(any x) {
    int n;
@@ -283,45 +248,6 @@ static inline int length(any x) {
    for (n = 0; isCell(x); x = cdr(x))
       ++n;
    return n;
-}
-
-/* Membership */
-static inline any member(any x, any y) {
-   any z = y;
-
-   while (isCell(y)) {
-      if (equal(x, car(y)))
-         return y;
-      if (z == (y = cdr(y)))
-         return NULL;
-   }
-   return isNil(y) || !equal(x,y)? NULL : y;
-}
-
-static inline any memq(any x, any y) {
-   any z = y;
-
-   while (isCell(y)) {
-      if (x == car(y))
-         return y;
-      if (z == (y = cdr(y)))
-         return NULL;
-   }
-   return isNil(y) || x != y? NULL : y;
-}
-
-static inline int indx(any x, any y) {
-   int n = 1;
-   any z = y;
-
-   while (isCell(y)) {
-      if (equal(x, car(y)))
-         return n;
-      ++n;
-      if (z == (y = cdr(y)))
-         return 0;
-   }
-   return 0;
 }
 
 /* List interpreter */
