@@ -546,81 +546,46 @@ any isIntern(any nm, any tree[2]) {
    return NULL;
 }
 
-any intern(any sym, any tree[2]) {
+any intern(any sym, any tree[2])
+{
    any nm, x, y, z;
    long n;
 
    if ((nm = name(sym)) == txt(0))
       return sym;
-   if (isTxt(nm)) {
-      if (!isCell(x = tree[0])) {
-         tree[0] = cons(sym, Nil);
-         return sym;
-      }
-      for (;;) {
-         if ((n = (word)nm - (word)name(car(x))) == 0)
-            return car(x);
-         if (!isCell(cdr(x))) {
-            cdr(x) = n<0? cons(cons(sym,Nil), Nil) : cons(Nil, cons(sym,Nil));
-            return sym;
-         }
-         if (n < 0) {
-            if (isCell(cadr(x)))
-               x = cadr(x);
-            else {
-               cadr(x) = cons(sym, Nil);
-               return sym;
-            }
-         }
-         else {
-            if (isCell(cddr(x)))
-               x = cddr(x);
-            else {
-               cddr(x) = cons(sym, Nil);
-               return sym;
-            }
-         }
-      }
+
+   if (!isCell(x = tree[0]))
+   {
+      tree[0] = cons(sym, Nil);
+      return sym;
    }
-   else {
-      if (!isCell(x = tree[1])) {
-         tree[1] = cons(sym, Nil);
+   for (;;)
+   {
+      if ((n = (word)nm - (word)name(car(x))) == 0)
+         return car(x);
+      if (!isCell(cdr(x)))
+      {
+         cdr(x) = n < 0 ? cons(cons(sym, Nil), Nil) : cons(Nil, cons(sym, Nil));
          return sym;
       }
-      for (;;) {
-         y = nm,  z = name(car(x));
-         while ((n = (word)tail(y) - (word)tail(z)) == 0) {
-            y = val(y),  z = val(z);
-            if (isNum(y)) {
-               if (y == z)
-                  return car(x);
-               n = isNum(z)? y-z : -1;
-               break;
-            }
-            if (isNum(z)) {
-               n = +1;
-               break;
-            }
-         }
-         if (!isCell(cdr(x))) {
-            cdr(x) = n<0? cons(cons(sym,Nil), Nil) : cons(Nil, cons(sym,Nil));
+      if (n < 0)
+      {
+         if (isCell(cadr(x)))
+            x = cadr(x);
+         else
+         {
+            cadr(x) = cons(sym, Nil);
             return sym;
          }
-         if (n < 0) {
-            if (isCell(cadr(x)))
-               x = cadr(x);
-            else {
-               cadr(x) = cons(sym, Nil);
-               return sym;
-            }
-         }
-         else {
-            if (isCell(cddr(x)))
-               x = cddr(x);
-            else {
-               cddr(x) = cons(sym, Nil);
-               return sym;
-            }
+      }
+      else
+      {
+         if (isCell(cddr(x)))
+            x = cddr(x);
+         else
+         {
+            cddr(x) = cons(sym, Nil);
+            return sym;
          }
       }
    }
