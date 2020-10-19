@@ -23,3 +23,4 @@ bye {doBye}
 + {doAdd}
 de {doDe}
 let {doLet}
+prin {doPrin}

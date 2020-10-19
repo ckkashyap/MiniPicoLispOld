@@ -30,6 +30,7 @@ sym.d rom.d ram.d: gen3m init.s
 	./gen3m 0 init.s
 
 gen3m: gen3m.c
+	@echo "Building gen3m"
 	$(CC) -o gen3m gen3m.c
 
 # Clean up

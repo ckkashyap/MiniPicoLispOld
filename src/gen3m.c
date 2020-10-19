@@ -73,9 +73,11 @@ static void mkSym(int *ix, char ***list, char *mem, char *name, char *value) {
    word w;
 
    bin = NO;
-   i = (w = Ascii6[*name++ & 127]) & 1? 7 : 6;
+   w = Ascii6[*name++ & 127];
+   i = 6;
    while (*name) {
-      d = (c = Ascii6[*name++ & 127]) & 1? 7 : 6;
+      c = Ascii6[*name++ & 127];
+      d = 6;
 
       if (i != Bits)
          w |= (word)c << i;
@@ -94,6 +96,7 @@ static void mkSym(int *ix, char ***list, char *mem, char *name, char *value) {
       i += d;
    }
    if (bin) {
+      giveup("BIN IS NOT SUPPORTED");
       if (i <= (Bits-2))
          addList(&RomIx, &Rom, "0x%lx", box(w));
       else {
