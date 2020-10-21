@@ -12,7 +12,7 @@ picolisp: $(bin)/picolisp
 
 .c.o:
 	echo $*.c:
-	$(CC) -c -O2 -pipe \
+	$(CC) -c -g3 -pipe \
 	-falign-functions -fomit-frame-pointer -fno-strict-aliasing \
 	-W -Wimplicit -Wreturn-type -Wunused -Wformat \
 	-Wuninitialized -Wstrict-prototypes \
@@ -21,8 +21,7 @@ picolisp: $(bin)/picolisp
 $(bin)/picolisp: $(picoFiles:.c=.o)
 	mkdir -p $(bin)
 	echo "  " link picolisp:
-	$(CC) -o $(bin)/picolisp $(picoFiles:.c=.o) -lc -lm
-	strip $(bin)/picolisp
+	$(CC) -g3 -o $(bin)/picolisp $(picoFiles:.c=.o) -lc -lm
 
 $(picoFiles:.c=.o): sym.d rom.d ram.d
 
