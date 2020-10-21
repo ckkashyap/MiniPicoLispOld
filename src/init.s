@@ -29,3 +29,4 @@ for {doFor}
 setq {doSetq}
 make {doMake}
 link {doLink}
+cons {doCons}
