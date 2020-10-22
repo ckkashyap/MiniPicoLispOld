@@ -2174,7 +2174,7 @@ int main(int ac, char *av[]) {
       if (Ram[i] != (any)(Ram + i))
          intern((any)(Ram + i), Intern);
    if (ac >= 2 && strcmp(av[ac-2], "+") == 0)
-      val(Dbg) = T,  av[ac-2] = NULL;
+      av[ac-2] = NULL;
    if (av[0] && *av[0] != '-' && (p = strrchr(av[0], '/')) && !(p == av[0]+1 && *av[0] == '.')) {
       Home = malloc(p - av[0] + 2);
       memcpy(Home, av[0], p - av[0] + 1);
@@ -2184,8 +2184,9 @@ int main(int ac, char *av[]) {
    OutFile = stdout,  Env.put = putStdout;
    ApplyArgs = cons(cons(consSym(Nil,0), Nil), Nil);
    ApplyBody = cons(Nil,Nil);
-   if (!setjmp(ErrRst))
-      prog(val(Main)),  loadAll(NULL);
+   //if (!setjmp(ErrRst))
+   //   prog(val(Main)),  loadAll(NULL);
+   loadAll(NULL);
    while (!feof(stdin))
       load(NULL, ':', Nil);
    bye(0);
