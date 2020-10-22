@@ -15,3 +15,4 @@ setq {doSetq}
 make {doMake}
 link {doLink}
 cons {doCons}
+G (()(+  1 2))
