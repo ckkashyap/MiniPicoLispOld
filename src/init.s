@@ -2,8 +2,6 @@
 @ [At] NIL
 @@ [At2] NIL
 @@@ [At3] NIL
-meth [Meth] {doMeth}
-*Scl [Scl] 0
 
 ### System Functions ###
 bye {doBye}

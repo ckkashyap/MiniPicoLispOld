@@ -1033,7 +1033,7 @@ static any read0(bool top) {
       putByte(Chr, &i, &w, &p, &c1);
    }
    y = popSym(i, w, p, &c1);
-   if (x = symToNum(tail(y), (int)unBox(val(Scl)), '.', 0))
+   if (x = symToNum(tail(y), 0, '.', 0))
       return x;
    if (x = anonymous(name(y)))
       return x;
@@ -1081,7 +1081,7 @@ any token(any x, int c) {
       putByte1(Chr, &i, &w, &p);
       while (Env.get(), Chr >= '0' && Chr <= '9' || Chr == '.')
          putByte(Chr, &i, &w, &p, &c1);
-      return symToNum(tail(popSym(i, w, p, &c1)), (int)unBox(val(Scl)), '.', 0);
+      return symToNum(tail(popSym(i, w, p, &c1)), 0, '.', 0);
    }
    if (Chr != '+' && Chr != '-') {
       char nm[bufSize(x)];
@@ -2168,7 +2168,7 @@ int main(int ac, char *av[]) {
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
    intern(Nil, Intern);
    intern(T, Intern);
-   intern(Meth, Intern);
+   //intern(Meth, Intern);
    intern(Quote, Intern);  // Last protected symbol
    for (i = 1; i < RAMS; i += 2)
       if (Ram[i] != (any)(Ram + i))
