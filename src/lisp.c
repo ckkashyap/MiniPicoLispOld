@@ -37,7 +37,7 @@ typedef any (*fun)(any);
 #include "sym.d"
 #include "def.d"
 #include "mem.d"
-#define Nil (any)(Rom+1)
+#define Nil (any)(Mem+0)
 
 typedef struct heap {
    cell cells[CELLS];
@@ -467,7 +467,8 @@ any intern(any sym, any tree[2])
    if ((nm = name(sym)) == txt(0))
       return sym;
 
-   if (!isCell(x = tree[0]))
+   x = tree[0];
+   if (Nil == x)
    {
       tree[0] = cons(sym, Nil);
       return sym;
