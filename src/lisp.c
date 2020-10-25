@@ -21,9 +21,15 @@ typedef unsigned char *ptr;
 #undef bool
 typedef enum {NO,YES} bool;
 
+typedef union
+{
+    unsigned char parts[4];
+    word _t;
+} PartType;
 typedef struct cell {            // PicoLisp primary data type
    struct cell *car;
    struct cell *cdr;
+   //PartType type;
 } cell, *any;
 
 typedef any (*fun)(any);
@@ -2174,13 +2180,7 @@ int main(int ac, char *av[]) {
    for (i = 1; i < RAMS; i += 2)
       if (Ram[i] != (any)(Ram + i))
          intern((any)(Ram + i), Intern);
-   if (ac >= 2 && strcmp(av[ac-2], "+") == 0)
-      av[ac-2] = NULL;
-   if (av[0] && *av[0] != '-' && (p = strrchr(av[0], '/')) && !(p == av[0]+1 && *av[0] == '.')) {
-      Home = malloc(p - av[0] + 2);
-      memcpy(Home, av[0], p - av[0] + 1);
-      Home[p - av[0] + 1] = '\0';
-   }
+
    InFile = stdin,  Env.get = getStdin;
    OutFile = stdout,  Env.put = putStdout;
    ApplyArgs = cons(cons(consSym(Nil,0), Nil), Nil);
