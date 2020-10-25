@@ -1,4 +1,12 @@
-AAA (1 2 3)
-BBB (+ A B)
-INC ((X) (+ 1 X))
-CALLC {doBye}
+bye {doBye}
++ {doAdd}
+de {doDe}
+let {doLet}
+prinl {doPrin}
+do {doDo}
+for {doFor}
+setq {doSetq}
+make {doMake}
+link {doLink}
+cons {doCons}
+G (()(+  1 2))

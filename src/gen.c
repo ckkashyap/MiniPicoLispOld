@@ -110,7 +110,7 @@ static void insert(symbol **tree, char *name, int value)
 void addSym(int x)
 {
     char buf[100];
-    sprintf(buf, "(CellPtr)(Mem + %d)", x);
+    sprintf(buf, "(any)(Mem + %d)", x);
     addMem(buf);  
 }
 
@@ -483,7 +483,7 @@ int main(int ac, char *av[])
 
     fprintf(fpSYM, "#ifndef __SYM_D__\n");
     fprintf(fpSYM, "#define __SYM_D__\n");
-    fprintf(fpSYM, "#define Nil ((CellPtr)(Mem+0))\n");
+    fprintf(fpSYM, "#define Nil ((any)(Mem+0))\n");
 
     ac--;
 
@@ -523,7 +523,7 @@ int main(int ac, char *av[])
                 }
 
                 //print(buf, x);
-                fprintf(fpSYM, " (any)%s\n", buf);
+                fprintf(fpSYM, " (any)%s/*AA*/\n", buf);
             }
 
             if (skip() == '{')
@@ -546,11 +546,11 @@ int main(int ac, char *av[])
                 }
 
                 *p = '\0';
-                sprintf(buf, "((CellPtr)(%s))", Token);
+                sprintf(buf, "((any)(%s))", Token);
                 MemGen[x+1] = strdup(buf);
                 sprintf(buf, "0x%x", mkType(TXT, FUNC));
                 MemGen[x+2] = strdup(buf);
-                fprintf(fpSYM, "CellPtr %s(CellPtr);\n", Token);
+                fprintf(fpSYM, "any %s(any);\n", Token);
             }
             else
             {                                 // Value
@@ -591,10 +591,10 @@ int main(int ac, char *av[])
     // printf("%d\n", x);
 
     fprintf(fpMem, "#define MEMS %d\n", MemIdx);
-    fprintf(fpMem, "CellPtr Mem[] = {\n");
+    fprintf(fpMem, "any Mem[] = {\n");
     for (int i = 0; i < MemIdx; i += 3)
     {
-        fprintf(fpMem, "    (CellPtr)%s, (CellPtr)%s, (CellPtr)%s,\n", MemGen[i], MemGen[i + 1], MemGen[i + 2]);
+        fprintf(fpMem, "    (any)%s, (any)%s, (any)%s,\n", MemGen[i], MemGen[i + 1], MemGen[i + 2]);
     }
     fprintf(fpMem, "};\n");
     fclose(fpMem);

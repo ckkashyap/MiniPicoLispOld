@@ -29,6 +29,9 @@ typedef struct cell {            // PicoLisp primary data type
 typedef any (*fun)(any);
 
 #include "sym.d"
+#include "def.d"
+#include "mem.d"
+#define Nil (any)(Rom+1)
 
 typedef struct heap {
    cell cells[CELLS];
@@ -288,8 +291,6 @@ any const __attribute__ ((__aligned__(2*WORD))) Rom[] = {
 any __attribute__ ((__aligned__(2*WORD))) Ram[] = {
    #include "ram.d"
 };
-
-static jmp_buf ErrRst;
 
 ///////////////////////////////////////////////
 //               sym.c
@@ -2184,8 +2185,7 @@ int main(int ac, char *av[]) {
    OutFile = stdout,  Env.put = putStdout;
    ApplyArgs = cons(cons(consSym(Nil,0), Nil), Nil);
    ApplyBody = cons(Nil,Nil);
-   //if (!setjmp(ErrRst))
-   //   prog(val(Main)),  loadAll(NULL);
+
    loadAll(NULL);
    while (!feof(stdin))
       load(NULL, ':', Nil);
