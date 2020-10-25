@@ -518,7 +518,8 @@ any intern(any sym, any tree[2])
    {
       if ((n = (word)nm - (word)name(car(x))) == 0)
          return car(x);
-      if (!isCell(cdr(x)))
+      //if (!isCell(cdr(x)))
+      if (Nil == cdr(x))
       {
          cdr(x) = n < 0 ? cons(cons(sym, Nil), Nil) : cons(Nil, cons(sym, Nil));
          return sym;
