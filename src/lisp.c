@@ -29,10 +29,50 @@ typedef union
 typedef struct cell {            // PicoLisp primary data type
    struct cell *car;
    struct cell *cdr;
-   //PartType type;
+   PartType type;
 } cell, *any;
 
 typedef any (*fun)(any);
+
+typedef enum
+{
+    UNDEFINED,
+    TXT,
+    NUM,
+    FUNC,
+    PTR_CELL,
+} CellPartType;
+
+CellPartType getCARType(any cell)
+{
+    return cell->type.parts[0];
+}
+
+CellPartType getCDRType(any cell)
+{
+    return cell->type.parts[1];
+}
+
+void setCARType(any cell, CellPartType type)
+{
+    cell->type.parts[0] = type;
+}
+
+void setCDRType(any cell, CellPartType type)
+{
+    cell->type.parts[1] = type;
+}
+
+void setList(any cell)
+{
+    cell->type.parts[2] = 1;
+}
+
+int isList(any cell)
+{
+    return cell->type.parts[2];
+}
+
 
 #include "sym.d"
 #include "def.d"
@@ -464,8 +504,9 @@ any intern(any sym, any tree[2])
    any nm, x, y, z;
    long n;
 
-   if ((nm = name(sym)) == txt(0))
-      return sym;
+   nm = sym;
+   //if ((nm = name(sym)) == txt(0))
+   //   return sym;
 
    x = tree[0];
    if (Nil == x)
