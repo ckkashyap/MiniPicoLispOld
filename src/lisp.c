@@ -638,7 +638,7 @@ void unintern(any sym, any tree[2]) {
 
 /* Get symbol name */
 any name(any s) {
-   for (s = tail(s); isCell(s); s = car(s));
+   //for (s = tail(s); isCell(s); s = car(s));
    return s;
 }
 
@@ -1878,17 +1878,20 @@ any cons(any x, any y) {
    cell *p;
 
    if (!(p = Avail)) {
-      cell c1, c2;
+      // cell c1, c2;
 
-      Push(c1,x);
-      Push(c2,y);
-      gc(CELLS);
-      drop(c1);
-      p = Avail;
+      // Push(c1,x);
+      // Push(c2,y);
+      // gc(CELLS);
+      // drop(c1);
+      // p = Avail;
+      giveup("GC REQUIRED");
    }
    Avail = p->car;
    p->car = x;
    p->cdr = y;
+   setCARType(p, PTR_CELL);
+   setCDRType(p, PTR_CELL);
    return p;
 }
 
