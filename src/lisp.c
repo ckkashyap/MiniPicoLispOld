@@ -2212,6 +2212,68 @@ any loadAll(any ex) {
    return x;
 }
 
+void printTXT(any cell)
+{
+        word w = cell->car;
+        printf("<");
+        for(int i = 0; i < 8; i++)
+        {
+            word c = w & (word)0xff00000000000000;
+            c >>= 56;
+            if (!c)
+            {
+                w <<= 8;
+                continue;
+            }
+            printf("%c", c);
+            w <<= 8;
+        }
+        printf(">");
+}
+
+void printNUM(any cell)
+{
+    printf("%lld", cell->car);
+}
+void printCell(any cell)
+{
+    if (cell == Mem)
+    {
+        printf("Nil");
+        return;
+    }
+
+    int isLst = isList(cell);
+    any car = cell->car;
+    CellPartType carType = getCARType(cell);
+    any cdr = cell->car;
+    CellPartType cdrType = getCDRType(cell);
+
+    if (carType == TXT)
+    {
+        printTXT(cell);
+    }
+    else if (carType == NUM)
+    {
+        printNUM(cell);
+    }
+
+    if (isList(cell))
+    {
+        printf("(");
+        while(isList(cell))
+        {
+            carType = getCARType(cell);
+            if (carType == TXT) printTXT(cell);
+            else if (carType == NUM) printNUM(cell);
+            else printCell(cell->car);
+            cell = cell->cdr;
+            printf(" ");
+        }
+        printf(")");
+    }
+}
+
 /*** Main ***/
 int main(int ac, char *av[])
 {
@@ -2224,7 +2286,7 @@ int main(int ac, char *av[])
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
    intern(Nil, Intern);
-   for (int i = 2; i < MEMS; i += 3) // 2 because Nil has already been interned
+   for (int i = 3; i < MEMS; i += 3) // 2 because Nil has already been interned
    {
       any cell = &Mem[i];
       any car = cell->car;
@@ -2235,16 +2297,18 @@ int main(int ac, char *av[])
       //printf("%d %d\n", GetCARType(cell), GetCDRType(cell));
       if (TXT == carType && cdrType != FUNC && cell->cdr)
       {
+         printf("%d\n", i);
          intern(cell, Intern);
-         //print(cell);
-         //print(cell->cdr);
-         //printf("\n");
+         printCell(cell);
+         printCell(cell->cdr);
+         printf("\n");
       }
       else if (TXT == carType && cdrType == FUNC && cell->cdr)
       {
+         printf("%d\n", i);
          intern(cell, Intern);
-         //print(cell);
-         //printf(" CFUNC\n");
+         printCell(cell);
+         printf(" CFUNC\n");
       }
    }
 
