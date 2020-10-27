@@ -526,7 +526,8 @@ any intern(any sym, any tree[2])
       }
       if (n < 0)
       {
-         if (isCell(cadr(x)))
+         if (Nil != cadr(x))
+         //if (isCell(cadr(x)))
             x = cadr(x);
          else
          {
@@ -536,7 +537,8 @@ any intern(any sym, any tree[2])
       }
       else
       {
-         if (isCell(cddr(x)))
+         if (Nil != cddr(x))
+         //if (isCell(cddr(x)))
             x = cddr(x);
          else
          {
