@@ -2213,7 +2213,8 @@ any loadAll(any ex) {
 }
 
 /*** Main ***/
-int main(int ac, char *av[]) {
+int main(int ac, char *av[])
+{
    int i;
    char *p;
 
@@ -2221,18 +2222,36 @@ int main(int ac, char *av[]) {
    AV = av;
    heapAlloc();
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
-   intern(Nil, Intern);
-   intern(T, Intern);
-   //intern(Meth, Intern);
-   intern(Quote, Intern);  // Last protected symbol
-   for (i = 1; i < RAMS; i += 2)
-      if (Ram[i] != (any)(Ram + i))
-         intern((any)(Ram + i), Intern);
 
-   InFile = stdin,  Env.get = getStdin;
-   OutFile = stdout,  Env.put = putStdout;
-   ApplyArgs = cons(cons(consSym(Nil,0), Nil), Nil);
-   ApplyBody = cons(Nil,Nil);
+   intern(Nil, Intern);
+   for (int i = 2; i < MEMS; i += 3) // 2 because Nil has already been interned
+   {
+      any cell = &Mem[i];
+      any car = cell->car;
+      CellPartType carType = getCARType(cell);
+      any cdr = cell->car;
+      CellPartType cdrType = getCDRType(cell);
+
+      //printf("%d %d\n", GetCARType(cell), GetCDRType(cell));
+      if (TXT == carType && cdrType != FUNC && cell->cdr)
+      {
+         intern(cell, Intern);
+         //print(cell);
+         //print(cell->cdr);
+         //printf("\n");
+      }
+      else if (TXT == carType && cdrType == FUNC && cell->cdr)
+      {
+         intern(cell, Intern);
+         //print(cell);
+         //printf(" CFUNC\n");
+      }
+   }
+
+   InFile = stdin, Env.get = getStdin;
+   OutFile = stdout, Env.put = putStdout;
+   ApplyArgs = cons(cons(consSym(Nil, 0), Nil), Nil);
+   ApplyBody = cons(Nil, Nil);
 
    loadAll(NULL);
    while (!feof(stdin))
