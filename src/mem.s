@@ -9,4 +9,4 @@ setq {doSetq}
 make {doMake}
 link {doLink}
 cons {doCons}
-G (()(+  1 2))
+G ((X)(+  1 2))
