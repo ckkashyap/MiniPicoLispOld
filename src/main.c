@@ -604,7 +604,18 @@ any mkSym(byte *s) {
 }
 
 /* Make string */
-any mkStr(char *s) {return s && *s? mkSym((byte*)s) : Nil;}
+any mkStr(char *s)
+{
+   if (s && *s)
+   {
+      return mkSym((byte *)s);
+   }
+   else
+   {
+      return Nil;
+   }
+}
+
 
 
 // (==== ['sym ..]) -> NIL

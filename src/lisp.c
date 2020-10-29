@@ -141,8 +141,10 @@ typedef struct catchFrame {
 #define One             ((any)6)
 
 /* Symbol access */
-#define symPtr(x)       ((any)&(x)->cdr)
-#define val(x)          ((x)->car)
+//#define symPtr(x)       ((any)&(x)->cdr)
+#define symPtr(x)       (x)
+//#define val(x)          ((x)->car)
+#define val(x)          ((x)->cdr)
 #define tail(x)         (((x)-1)->cdr)
 
 /* Cell access */
@@ -174,8 +176,11 @@ typedef struct catchFrame {
 
 /* Predicates */
 #define isNil(x)        ((x)==Nil)
-#define isTxt(x)        (num(x)&1)
-#define isNum(x)        (num(x)&2)
+// isTxt should just check if car is txt
+//#define isTxt(x)        (num(x)&1)
+#define isTxt(x)        (((any)(x))->type.parts[0] == TXT)
+//#define isNum(x)        (num(x)&2)
+#define isNum(x)        (((any)(x))->type.parts[0] == NUM)
 #define isSym(x)        (num(x)&WORD)
 #define isSymb(x)       ((num(x)&(WORD+2))==WORD)
 #define isCell(x)       (!(num(x)&(2*WORD-1)))
@@ -354,7 +359,7 @@ int firstByte(any s) {
 int getByte1(int *i, word *p, any *q) {
    int c;
 
-   *i = BITS - 1, *p = (word)*q >> 1, *q = NULL;
+   *i = BITS - 1, *p = (word)*q , *q = NULL;
 
    c = *p & 127, *p >>= 8, *i -= 8;
 
@@ -444,22 +449,23 @@ int symBytes(any x) {
    if (isNil(x))
       return 0;
    x = name(x);
+   int t = x->type.parts[0];
    if (isTxt(x)) {
-      w = (word)x >> 1;
+      w = (word)(x->car);
       while (w)
-         ++cnt,  w >>= w & 1? 7 : 6;
+         ++cnt,  w >>= 8;
    }
-   else {
-      do {
-         w = (word)tail(x);
-         do
-            ++cnt;
-         while (w >>= w & 1? 7 : 6);
-      } while (!isNum(x = val(x)));
-      w = (word)x >> 2;
-      while (w)
-         ++cnt,  w >>= w & 1? 7 : 6;
-   }
+   // else {
+   //    do {
+   //       w = (word)tail(x);
+   //       do
+   //          ++cnt;
+   //       while (w >>= w & 1? 7 : 6);
+   //    } while (!isNum(x = val(x)));
+   //    w = (word)x >> 2;
+   //    while (w)
+   //       ++cnt,  w >>= w & 1? 7 : 6;
+   // }
    return cnt;
 }
 
@@ -658,8 +664,17 @@ any mkSym(byte *s) {
 }
 
 /* Make string */
-any mkStr(char *s) {return s && *s? mkSym((byte*)s) : Nil;}
-
+any mkStr(char *s)
+{
+   if (s && *s)
+   {
+      return mkSym((byte *)s);
+   }
+   else
+   {
+      return Nil;
+   }
+}
 
 // (==== ['sym ..]) -> NIL
 any doHide(any ex) {
@@ -786,7 +801,7 @@ void pathString(any x, char *p) {
    word w;
    char *h;
 
-   x = name(x);
+   x = x->car;
    if ((c = getByte1(&i, &w, &x)) == '+')
       *p++ = c,  c = getByte(&i, &w, &x);
    if (c != '@')
@@ -806,7 +821,8 @@ void rdOpen(any ex, any x, inFrame *f) {
    if (isNil(x))
       f->fp = stdin;
    else {
-      char nm[pathSize(x)];
+      int ps = pathSize(x);
+      char nm[ps];
 
       pathString(x,nm);
       if (nm[0] == '+') {
@@ -1915,9 +1931,9 @@ any consSym(any val, word w) {
       p = Avail;
    }
    Avail = p->car;
-   p = symPtr(p);
-   val(p) = val ?: p;
-   tail(p) = txt(w);
+   p->cdr = val ?: p;
+   p->car = w;
+   p->type.parts[0] = TXT;
    return p;
 }
 
