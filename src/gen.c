@@ -129,18 +129,18 @@ static int lookup(symbol **tree, char *name)
    return -1;
 }
 
-
 static void mkSym(char *name, char *value, CellPartType type)
 {
     BOOL BIN = NO;
-    int i, c, d;
+    int i=0, c, d;
     WORD_TYPE w=0;
 
     while(*name)
     {
         c = *name++;
-        w <<= 8;
-        w |= c;
+        //w <<= 8;
+        w |= (c << i);
+        i+=8;
     }
 
     addWord(w);
