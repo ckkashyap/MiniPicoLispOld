@@ -482,33 +482,35 @@ any isIntern(any nm, any tree[2]) {
    if (isTxt(nm)) {
       //for (x = tree[0];  isCell(x);) {
       for (x = tree[0];  x != Nil;) {
-         if ((n = (word)nm - (word)name(car(x))) == 0)
+         //if ((n = (word)nm - (word)name(car(x))) == 0)
+         //if ((n = (long)nm - (long)name(car(x))) == 0)
+         if ((n = (long)(car(nm)) - (long)name(caar(x))) == 0)
             return car(x);
          x = n<0? cadr(x) : cddr(x);
       }
    }
-   else {
-      for (x = tree[1];  isCell(x);) {
-         y = nm,  z = name(car(x));
-         for (;;) {
-            if ((n = (word)tail(y) - (word)tail(z)) != 0) {
-               x = n<0? cadr(x) : cddr(x);
-               break;
-            }
-            y = val(y),  z = val(z);
-            if (isNum(y)) {
-               if (y == z)
-                  return car(x);
-               x = isNum(z) && y>z? cddr(x) : cadr(x);
-               break;
-            }
-            if (isNum(z)) {
-               x = cddr(x);
-               break;
-            }
-         }
-      }
-   }
+   // else {
+   //    for (x = tree[1];  isCell(x);) {
+   //       y = nm,  z = name(car(x));
+   //       for (;;) {
+   //          if ((n = (word)tail(y) - (word)tail(z)) != 0) {
+   //             x = n<0? cadr(x) : cddr(x);
+   //             break;
+   //          }
+   //          y = val(y),  z = val(z);
+   //          if (isNum(y)) {
+   //             if (y == z)
+   //                return car(x);
+   //             x = isNum(z) && y>z? cddr(x) : cadr(x);
+   //             break;
+   //          }
+   //          if (isNum(z)) {
+   //             x = cddr(x);
+   //             break;
+   //          }
+   //       }
+   //    }
+   // }
    return NULL;
 }
 
@@ -529,7 +531,7 @@ any intern(any sym, any tree[2])
    }
    for (;;)
    {
-      if ((n = (word)nm - (word)name(car(x))) == 0)
+      if ((n = (long)(car(nm)) - (long)name(caar(x))) == 0)
          return car(x);
 
       //if (!isCell(cdr(x)))
@@ -825,7 +827,7 @@ void pathString(any x, char *p) {
 }
 
 void rdOpen(any ex, any x, inFrame *f) {
-   NeedSymb(ex,x);
+   //NeedSymb(ex,x); // TODO WHAT IS THIS ABOUT?
    if (isNil(x))
       f->fp = stdin;
    else {
@@ -1972,6 +1974,7 @@ void giveup(char *msg) {
 }
 
 void bye(int n) {
+   printf("BYE BYE\n");
    exit(n);
 }
 
@@ -2309,7 +2312,8 @@ int main(int ac, char *av[])
    heapAlloc();
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
-   intern(Nil, Intern);
+   //intern(Nil, Intern);
+   //isIntern(Nil, Intern);
    for (int i = 3; i < MEMS; i += 3) // 2 because Nil has already been interned
    {
       any cell = &Mem[i];
@@ -2333,6 +2337,10 @@ int main(int ac, char *av[])
          intern(cell, Intern);
          printCell(cell);
          printf(" CFUNC\n");
+      }
+      else if (TXT == carType)
+      {
+         intern(cell, Intern);
       }
    }
 

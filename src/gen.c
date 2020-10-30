@@ -488,6 +488,7 @@ int main(int ac, char *av[])
     ac--;
 
     x = ramSym("Nil", "(Mem)", PTR_CELL);
+    x = ramSym("Nil", "(Mem)", PTR_CELL);
     insert(&Intern, "Nil", x);
 
     do
@@ -592,7 +593,9 @@ int main(int ac, char *av[])
 
     fprintf(fpMem, "#define MEMS %d\n", MemIdx);
     fprintf(fpMem, "any Mem[] = {\n");
-    for (int i = 0; i < MemIdx; i += 3)
+
+    fprintf(fpMem, "    (any)(Mem + 0), (any)(Mem + 0), (any)(0x404),\n");
+    for (int i = 3; i < MemIdx; i += 3)
     {
         fprintf(fpMem, "    (any)%s, (any)%s, (any)%s,\n", MemGen[i], MemGen[i + 1], MemGen[i + 2]);
     }

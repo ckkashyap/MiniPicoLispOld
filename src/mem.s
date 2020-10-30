@@ -1,6 +1,10 @@
 bye {doBye}
-+ {doAdd}
 de {doDe}
+d {doDe}
+c {doDe}
+b {doDe}
+a {doDe}
++ {doAdd}
 let {doLet}
 prinl {doPrin}
 do {doDo}
