@@ -14,7 +14,7 @@
 #define WORD ((int)sizeof(long))
 #define BITS (8*WORD)
 
-typedef unsigned long word;
+typedef unsigned long word; // TODO - THIS IS USED IN SUBTRACTION !!!!
 typedef unsigned char byte;
 typedef unsigned char *ptr;
 
@@ -145,7 +145,13 @@ typedef struct catchFrame {
 #define symPtr(x)       (x)
 //#define val(x)          ((x)->car)
 #define val(x)          ((x)->cdr)
-#define tail(x)         (((x)-1)->cdr)
+
+
+any tail1(any x)
+{
+   return (((x)-1)->cdr);
+}
+#define tail(x)         (x)
 
 /* Cell access */
 #define car(x)          ((x)->car)
@@ -421,7 +427,7 @@ void putByte(int c, int *i, word *p, any *q, cell *cp) {
          *q = val(*q) = consName(*p, Zero);
       else {
          Push(*cp, consSym(NULL,0));
-         tail(data(*cp)) = *q = consName(*p, Zero);
+         //tail(data(*cp)) = *q = consName(*p, Zero); // TODO WHATS GOING ON
       }
       *p = c >> BITS - *i;
       *i -= BITS;
@@ -436,7 +442,7 @@ any popSym(int i, word n, any q, cell *cp) {
    }
    if (i > BITS-1) {
       Push(*cp, consSym(NULL,0));
-      tail(data(*cp)) = consName(n, Zero);
+      //tail(data(*cp)) = consName(n, Zero); // TODO WHATS GOING ON
       return Pop(*cp);
    }
    return consSym(NULL,n);
@@ -474,7 +480,8 @@ any isIntern(any nm, any tree[2]) {
    long n;
 
    if (isTxt(nm)) {
-      for (x = tree[0];  isCell(x);) {
+      //for (x = tree[0];  isCell(x);) {
+      for (x = tree[0];  x != Nil;) {
          if ((n = (word)nm - (word)name(car(x))) == 0)
             return car(x);
          x = n<0? cadr(x) : cddr(x);
@@ -524,6 +531,7 @@ any intern(any sym, any tree[2])
    {
       if ((n = (word)nm - (word)name(car(x))) == 0)
          return car(x);
+
       //if (!isCell(cdr(x)))
       if (Nil == cdr(x))
       {
@@ -681,7 +689,7 @@ any doHide(any ex) {
    any x, y;
 
    Transient[0] = Transient[1] = Nil;
-   for (x = cdr(ex); isCell(x); x = cdr(x)) {
+   for (x = cdr(ex); x != Nil; x = cdr(x)) {
       y = EVAL(car(x));
       NeedSymb(ex,y);
       intern(y, Transient);
@@ -1947,8 +1955,8 @@ any consName(word w, any n) {
    }
    Avail = p->car;
    p = symPtr(p);
-   val(p) = n;
-   tail(p) = (any)w;
+   p->car = (any)w;
+   p->cdr = n;
    return p;
 }
 ///////////////////////////////////////////////
