@@ -452,7 +452,7 @@ any isIntern(any nm, any tree[2]) {
 
 any intern(any sym, any tree[2])
 {
-   any nm, x, y, z;
+   any nm, x;
    long n;
 
    if ((nm = name(sym)) == txt(0))
