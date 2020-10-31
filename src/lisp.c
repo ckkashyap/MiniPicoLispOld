@@ -75,8 +75,10 @@ int isList(any cell)
 
 
 #include "sym.d"
+#undef Nil
 #include "def.d"
 #include "mem.d"
+#undef Nil
 #define Nil (any)(Mem+0)
 
 typedef struct heap {
@@ -473,29 +475,18 @@ int symBytes(any x) {
 
    if (isNil(x))
       return 0;
-   x = name(x);
-   int t = x->type.parts[0];
+
    if (isTxt(x)) {
       w = (word)(x->car);
       while (w)
          ++cnt,  w >>= 8;
    }
-   // else {
-   //    do {
-   //       w = (word)tail(x);
-   //       do
-   //          ++cnt;
-   //       while (w >>= w & 1? 7 : 6);
-   //    } while (!isNum(x = val(x)));
-   //    w = (word)x >> 2;
-   //    while (w)
-   //       ++cnt,  w >>= w & 1? 7 : 6;
-   // }
+
    return cnt;
 }
 
 any isIntern(any nm, any tree[2]) {
-   any x, y, z;
+   any x;
    long n;
 
    if (isTxt(nm)) {
@@ -508,34 +499,13 @@ any isIntern(any nm, any tree[2]) {
          x = n<0? cadr(x) : cddr(x);
       }
    }
-   // else {
-   //    for (x = tree[1];  isCell(x);) {
-   //       y = nm,  z = name(car(x));
-   //       for (;;) {
-   //          if ((n = (word)tail(y) - (word)tail(z)) != 0) {
-   //             x = n<0? cadr(x) : cddr(x);
-   //             break;
-   //          }
-   //          y = val(y),  z = val(z);
-   //          if (isNum(y)) {
-   //             if (y == z)
-   //                return car(x);
-   //             x = isNum(z) && y>z? cddr(x) : cadr(x);
-   //             break;
-   //          }
-   //          if (isNum(z)) {
-   //             x = cddr(x);
-   //             break;
-   //          }
-   //       }
-   //    }
-   // }
+
    return NULL;
 }
 
 any intern(any sym, any tree[2])
 {
-   any nm, x, y, z;
+   any nm, x;
    long n;
 
    nm = sym;
@@ -1961,7 +1931,7 @@ any consSym(any val, word w) {
    }
    Avail = p->car;
    p->cdr = val ?: p;
-   p->car = w;
+   p->car = (any)w;
    p->type.parts[0] = TXT;
    return p;
 }
@@ -2262,7 +2232,8 @@ any loadAll(any ex) {
 
 void printTXT(any cell)
 {
-        word w = cell->car;
+        word w = (word)cell->car;
+
         printf("<");
         for(int i = 0; i < 8; i++)
         {
@@ -2273,7 +2244,7 @@ void printTXT(any cell)
                 w <<= 8;
                 continue;
             }
-            printf("%c", c);
+            printf("%c", (char)c);
             w <<= 8;
         }
         printf(">");
@@ -2281,21 +2252,17 @@ void printTXT(any cell)
 
 void printNUM(any cell)
 {
-    printf("%lld", cell->car);
+    printf("%lld", (long long int)cell->car);
 }
 void printCell(any cell)
 {
-    if (cell == Mem)
+    if (cell == Nil)
     {
         printf("Nil");
         return;
     }
 
-    int isLst = isList(cell);
-    any car = cell->car;
     CellPartType carType = getCARType(cell);
-    any cdr = cell->car;
-    CellPartType cdrType = getCDRType(cell);
 
     if (carType == TXT)
     {
@@ -2325,10 +2292,9 @@ void printCell(any cell)
 /*** Main ***/
 int main(int ac, char *av[])
 {
-   int i;
-   char *p;
+   if (ac == 0) printf("STRANGE\n");
 
-   AV0 = *av++;
+   av++;
    AV = av;
    heapAlloc();
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
@@ -2337,10 +2303,8 @@ int main(int ac, char *av[])
    //isIntern(Nil, Intern);
    for (int i = 3; i < MEMS; i += 3) // 2 because Nil has already been interned
    {
-      any cell = &Mem[i];
-      any car = cell->car;
+      any cell = (any)&Mem[i];
       CellPartType carType = getCARType(cell);
-      any cdr = cell->car;
       CellPartType cdrType = getCDRType(cell);
 
       //printf("%d %d\n", GetCARType(cell), GetCDRType(cell));
