@@ -189,10 +189,29 @@ any tail1(any x)
 #define isNum(x)        (((any)(x))->type.parts[0] == NUM)
 #define isSym(x)        (num(x)&WORD)
 #define isSymb(x)       ((num(x)&(WORD+2))==WORD)
-#define isCell(x)       (!(num(x)&(2*WORD-1)))
+//#define isCell(x)       (!(num(x)&(2*WORD-1)))
+#define isCell(x)        (((any)(x))->type.parts[0] == PTR_CELL)
+#define isFunc(x)        (((any)(x))->type.parts[1] == FUNC)
 
 /* Evaluation */
-#define EVAL(x)         (isNum(x)? x : isSym(x)? val(x) : evList(x))
+any evList(any);
+/* Evaluation */
+any EVAL(any x)
+{
+   if (isNum(x))
+   {
+      return x;
+   }
+   //else if (isSym(x))
+   else if (isTxt(x))
+   {
+      return val(x);
+   }
+   else
+   {
+      return evList(x);
+   }
+}
 #define evSubr(f,x)     (*(fun)(num(f) & ~2))(x)
 
 /* Error checking */
@@ -2224,6 +2243,8 @@ any evList(any ex) {
    for (;;) {
       if (isNil(val(foo)))
          undefined(foo,ex);
+      if (isFunc(foo))
+         return evSubr(foo->cdr,ex);
       if (isNum(foo = val(foo)))
          return evSubr(foo,ex);
       if (isCell(foo))
