@@ -1435,14 +1435,16 @@ int numBytes(any x) {
 }
 
 /* Make number from symbol */
-any symToNum(any s, int scl, int sep, int ign) {
+any symToNum(any sym, int scl, int sep, int ign) {
    unsigned c;
    int i;
    word w;
    bool sign, frac;
    long n;
+   any s = sym->car;
 
-   if (!(c = getByte1(&i, &w, &(s->car))))
+
+   if (!(c = getByte1(&i, &w, &s)))
       return NULL;
    while (c <= ' ')  /* Skip white space */
       if (!(c = getByte(&i, &w, &s)))
