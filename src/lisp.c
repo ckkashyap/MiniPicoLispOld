@@ -1442,7 +1442,7 @@ any symToNum(any s, int scl, int sep, int ign) {
    bool sign, frac;
    long n;
 
-   if (!(c = getByte1(&i, &w, &s)))
+   if (!(c = getByte1(&i, &w, &(s->car))))
       return NULL;
    while (c <= ' ')  /* Skip white space */
       if (!(c = getByte(&i, &w, &s)))
@@ -1482,7 +1482,13 @@ any symToNum(any s, int scl, int sep, int ign) {
    if (frac)
       while (--scl >= 0)
          n *= 10;
-   return box(sign? -n : n);
+   //return box(sign? -n : n);
+
+
+   any r = cons((any)n, Nil);
+   r->type.parts[0] = NUM;
+   
+   return r;
 }
 
 // (+ 'num ..) -> num
