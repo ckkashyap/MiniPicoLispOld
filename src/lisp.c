@@ -1496,7 +1496,19 @@ any symToNum(any sym, int scl, int sep, int ign) {
 // (+ 'num ..) -> num
 any doAdd(any ex) {
    any x, y;
-   long n;
+   long n=0;
+
+   x = ex->cdr;
+   while (x != Nil)
+   {
+      n += (long)(x->car->car);
+      x = x->cdr;
+   }
+
+   printf("doAdd returned %lld\n", n);
+   any r = cons((any)10, Nil);
+   r->type.parts[0] = NUM;
+   return r;
 
    x = cdr(ex);
    if (isNil(y = EVAL(car(x))))
@@ -2106,6 +2118,7 @@ bool equal(any x, any y) {
 
 /*** Error handling ***/
 void err(any ex, any x, char *fmt, ...) {
+   printf("ERROR\n");
     bye(0);
     if (ex == x) bye(1);
     if (fmt == NULL) bye(1);
