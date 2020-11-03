@@ -324,7 +324,8 @@ any xSym(any);
 static inline int length(any x) {
    int n;
 
-   for (n = 0; isCell(x); x = cdr(x))
+   //for (n = 0; isCell(x); x = cdr(x))
+   for (n = 0; x != Nil; x = cdr(x))
       ++n;
    return n;
 }
@@ -335,7 +336,8 @@ static inline any prog(any x) {
 
    do
       y = EVAL(car(x));
-   while (isCell(x = cdr(x)));
+   while (Nil != (x = cdr(x)));
+   //while (isCell(x = cdr(x)));
    return y;
 }
 
@@ -2139,7 +2141,8 @@ any evExpr(any expr, any x) {
    f.link = Env.bind,  Env.bind = (bindFrame*)&f;
    f.i = sizeof(f.bnd) / (2*sizeof(any)) - 1;
    f.cnt = 1,  f.bnd[0].sym = At,  f.bnd[0].val = val(At);
-   while (isCell(y)) {
+   //while (isCell(y)) {
+   while (y != Nil) {
       f.bnd[f.cnt].sym = car(y);
       f.bnd[f.cnt].val = EVAL(car(x));
       ++f.cnt, x = cdr(x), y = cdr(y);
