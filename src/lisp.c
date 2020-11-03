@@ -138,7 +138,8 @@ typedef struct catchFrame {
 #define num(x)          ((long)(x))
 #define txt(n)          ((any)(num(n)<<1|1))
 #define box(n)          ((any)(num(n)<<2|2))
-#define unBox(n)        (num(n)>>2)
+//#define unBox(n)        (num(n)>>2)
+#define unBox(n)        (num(n->car))
 #define Zero            ((any)2)
 #define One             ((any)6)
 
@@ -1498,30 +1499,21 @@ any doAdd(any ex) {
    any x, y;
    long n=0;
 
-   x = ex->cdr;
-   while (x != Nil)
-   {
-      n += (long)(x->car->car);
-      x = x->cdr;
-   }
-
-   printf("doAdd returned %lld\n", n);
-   any r = cons((any)10, Nil);
-   r->type.parts[0] = NUM;
-   return r;
-
    x = cdr(ex);
    if (isNil(y = EVAL(car(x))))
       return Nil;
    NeedNum(ex,y);
    n = unBox(y);
-   while (isCell(x = cdr(x))) {
+   while (Nil != (x = cdr(x))) {
       if (isNil(y = EVAL(car(x))))
          return Nil;
       NeedNum(ex,y);
       n += unBox(y);
    }
-   return box(n);
+
+   any r = cons((any)n, Nil);
+   r->type.parts[0] = NUM;
+   return r;
 }
 
 
@@ -2331,18 +2323,18 @@ int main(int ac, char *av[])
       //printf("%d %d\n", GetCARType(cell), GetCDRType(cell));
       if (TXT == carType && cdrType != FUNC && cell->cdr)
       {
-         printf("%d\n", i);
+         //printf("%d\n", i);
          intern(cell, Intern);
-         printCell(cell);
-         printCell(cell->cdr);
-         printf("\n");
+         //printCell(cell);
+         //printCell(cell->cdr);
+         //printf("\n");
       }
       else if (TXT == carType && cdrType == FUNC && cell->cdr)
       {
-         printf("%d\n", i);
+         //printf("%d\n", i);
          intern(cell, Intern);
-         printCell(cell);
-         printf(" CFUNC\n");
+         //printCell(cell);
+         //printf(" CFUNC\n");
       }
       else if (TXT == carType)
       {
