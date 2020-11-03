@@ -10,6 +10,8 @@ de {doDe}
 let {doLet}
 prinl {doPrin}
 do {doDo}
+if {doIf}
+== {doEq}
 for {doFor}
 setq {doSetq}
 make {doMake}

@@ -1326,8 +1326,14 @@ void prTransient(any nm) {
 /* Print one expression */
 void print(any x) {
    if (isNum(x))
+   {
       outNum(unBox(x));
-   else if (isSym(x)) {
+      return;
+   }
+   printf ("TODO NOT A NUMBER\n");
+   return;
+
+   if (isSym(x)) {
       any nm = name(x);
 
       if (nm == txt(0))
@@ -1543,8 +1549,8 @@ static void redefMsg(any x, any y) {
 }
 
 static void redefine(any ex, any s, any x) {
-   NeedSymb(ex,s);
-   CheckVar(ex,s);
+   //NeedSymb(ex,s); TODO - GOTTA KNOW WHAT"S GOING ON HERE
+   //CheckVar(ex,s);
    if (!isNil(val(s))  &&  s != val(s)  &&  !equal(x,val(s)))
       redefMsg(s,NULL);
    val(s) = x;
@@ -1552,6 +1558,32 @@ static void redefine(any ex, any s, any x) {
 
 // (quote . any) -> any
 any doQuote(any x) {return cdr(x);}
+
+// (== 'any ..) -> flg
+any doEq(any x) {
+   cell c1;
+
+   x = cdr(x),  Push(c1, EVAL(car(x)));
+   while (isCell(x = cdr(x)))
+      if (data(c1) != EVAL(car(x))) {
+         drop(c1);
+         return Nil;
+      }
+   drop(c1);
+   return T;
+}
+
+// (if 'any1 any2 . prg) -> any
+any doIf(any x) {
+   any a;
+
+   x = cdr(x);
+   if (isNil(a = EVAL(car(x))))
+      return prog(cddr(x));
+   val(At) = a;
+   x = cdr(x);
+   return EVAL(car(x));
+}
 
 // (de sym . any) -> sym
 any doDe(any ex) {

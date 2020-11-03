@@ -1,1 +1,5 @@
 Empty list must be figured out!
+
+Checkout the isSym in redefine
+
+also, let with multiple variables seems to not work - fix IF and ==

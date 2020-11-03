@@ -1480,6 +1480,32 @@ static void redefine(any ex, any s, any x) {
 // (quote . any) -> any
 any doQuote(any x) {return cdr(x);}
 
+// (== 'any ..) -> flg
+any doEq(any x) {
+   cell c1;
+
+   x = cdr(x),  Push(c1, EVAL(car(x)));
+   while (isCell(x = cdr(x)))
+      if (data(c1) != EVAL(car(x))) {
+         drop(c1);
+         return Nil;
+      }
+   drop(c1);
+   return T;
+}
+
+// (if 'any1 any2 . prg) -> any
+any doIf(any x) {
+   any a;
+
+   x = cdr(x);
+   if (isNil(a = EVAL(car(x))))
+      return prog(cddr(x));
+   val(At) = a;
+   x = cdr(x);
+   return EVAL(car(x));
+}
+
 // (de sym . any) -> sym
 any doDe(any ex) {
    redefine(ex, cadr(ex), cddr(ex));
