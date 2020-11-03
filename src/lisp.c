@@ -713,7 +713,8 @@ any doSetq(any ex) {
       NeedVar(ex,y);
       CheckVar(ex,y);
       val(y) = EVAL(car(x));
-   } while (isCell(x = cdr(x)));
+   //} while (isCell(x = cdr(x)));
+   } while (Nil != (x = cdr(x)));
    return val(y);
 }
 static void makeError(any ex) {err(ex, NULL, "Not making");}
