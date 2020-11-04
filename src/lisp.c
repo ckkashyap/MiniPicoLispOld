@@ -2348,6 +2348,8 @@ int main(int ac, char *av[])
    heapAlloc();
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
+   Mem[4] = Mem; // TODO - SETTING THE VALUE OF NIL
+
    //intern(Nil, Intern);
    //isIntern(Nil, Intern);
    for (int i = 3; i < MEMS; i += 3) // 2 because Nil has already been interned
