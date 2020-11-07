@@ -44,10 +44,10 @@ mem.d: gen mem.s
 
 gen: gen.c
 	@echo "Building gen"
-	$(CC) -o gen gen.c
+	$(CC) -g3 -o gen gen.c
 	
 # Clean up
 clean:
-	rm -f gen3m *.d *.o
+	rm -f gen3m *.d *.o gen
 
 # vi:noet:ts=4:sw=4
