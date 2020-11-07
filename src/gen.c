@@ -132,8 +132,8 @@ static int lookup(symbol **tree, char *name)
 static void mkSym(char *name, char *value, CellPartType type)
 {
     BOOL BIN = NO;
-    int i=0, c, d;
-    WORD_TYPE w=0;
+    int i=0, d;
+    WORD_TYPE w=0, c;
 
     while(*name)
     {
