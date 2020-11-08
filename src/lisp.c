@@ -1413,7 +1413,8 @@ void prin(any x) {
 any doPrin(any x) {
    any y = Nil;
 
-   while (isCell(x = cdr(x)))
+   //while (isCell(x = cdr(x)))
+   while (Nil != (x = cdr(x)))
       prin(y = EVAL(car(x)));
    newline();
    return y;
