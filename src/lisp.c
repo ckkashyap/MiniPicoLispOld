@@ -1625,7 +1625,7 @@ any doLet(any x) {
          f.bnd[f.cnt].val = val(car(y));
          ++f.cnt;
          val(car(y)) = EVAL(cadr(y));
-      } while (isCell(y = cddr(y)));
+      } while (isCell(y = cddr(y)) && y != Nil);
       x = prog(cdr(x));
       while (--f.cnt >= 0)
          val(f.bnd[f.cnt].sym) = f.bnd[f.cnt].val;
