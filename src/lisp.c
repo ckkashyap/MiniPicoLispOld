@@ -75,6 +75,8 @@ int isList(any cell)
 
 
 #include "sym.d"
+#undef T
+#undef Nil
 #include "def.d"
 #include "mem.d"
 
@@ -187,7 +189,13 @@ any tail1(any x)
 #define isTxt(x)        (((any)(x))->type.parts[0] == TXT)
 //#define isNum(x)        (num(x)&2)
 #define isNum(x)        (((any)(x))->type.parts[0] == NUM)
-#define isSym(x)        (num(x)&WORD)
+//#define isSym(x)        (num(x)&WORD)
+bool isSym(any x)
+{
+   if (x) return 0;
+   // TODO - this must be checked out
+   return 0;
+}
 #define isSymb(x)       ((num(x)&(WORD+2))==WORD)
 //#define isCell(x)       (!(num(x)&(2*WORD-1)))
 #define isCell(x)        (((any)(x))->type.parts[0] == PTR_CELL)
@@ -1380,6 +1388,9 @@ void prin(any x) {
    if (!isNil(x)) {
       if (isNum(x))
          outNum(unBox(x));
+      else if (x==T) {
+         printf("T");
+      }
       else if (isSym(x)) {
          int i, c;
          word w;
@@ -1549,6 +1560,12 @@ static void redefMsg(any x, any y) {
 static void redefine(any ex, any s, any x) {
    //NeedSymb(ex,s); TODO - GOTTA KNOW WHAT"S GOING ON HERE
    //CheckVar(ex,s);
+
+   if (ex == Nil)
+   {
+      giveup("THIS SHOULD NOT HAPPEN");
+   }
+
    if (!isNil(val(s))  &&  s != val(s)  &&  !equal(x,val(s)))
       redefMsg(s,NULL);
    val(s) = x;
@@ -1796,9 +1813,10 @@ any doDo(any x) {
    x = cdr(x),  z = Nil;
    for (;;) {
       if (isNum(f)) {
-         if (f == Zero)
+         //if (f == Zero)
+         if (f->car == 0)
             return z;
-         f = (any)(num(f) - 4);
+         f->car = (any)((word)f->car - 1);
       }
       y = x;
       do {
@@ -1823,7 +1841,8 @@ any doDo(any x) {
             else
                z = evList(z);
          }
-      } while (isCell(y = cdr(y)));
+      //} while (isCell(y = cdr(y)));
+      } while (Nil != (y = cdr(y)));
    }
 }
 
@@ -2346,8 +2365,8 @@ int main(int ac, char *av[])
    heapAlloc();
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
-   Mem[4] = Mem; // TODO - SETTING THE VALUE OF NIL
-   Mem[7] = (Mem+6); // TODO - SETTING THE VALUE OF NIL
+   Mem[4] = (any)Mem; // TODO - SETTING THE VALUE OF NIL
+   Mem[7] = (any)(Mem+6); // TODO - SETTING THE VALUE OF NIL
 
    //intern(Nil, Intern);
    //isIntern(Nil, Intern);
