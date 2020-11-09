@@ -75,11 +75,8 @@ int isList(any cell)
 
 
 #include "sym.d"
-#undef Nil
 #include "def.d"
 #include "mem.d"
-#undef Nil
-#define Nil (any)(Mem+0)
 
 typedef struct heap {
    cell cells[CELLS];
@@ -2350,6 +2347,7 @@ int main(int ac, char *av[])
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
    Mem[4] = Mem; // TODO - SETTING THE VALUE OF NIL
+   Mem[7] = (Mem+6); // TODO - SETTING THE VALUE OF NIL
 
    //intern(Nil, Intern);
    //isIntern(Nil, Intern);

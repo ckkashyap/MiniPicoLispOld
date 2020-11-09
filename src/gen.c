@@ -484,11 +484,15 @@ int main(int ac, char *av[])
     fprintf(fpSYM, "#ifndef __SYM_D__\n");
     fprintf(fpSYM, "#define __SYM_D__\n");
     fprintf(fpSYM, "#define Nil ((any)(Mem+0))\n");
+    fprintf(fpSYM, "#define T ((any)(Mem+6))\n");
 
     ac--;
 
     x = ramSym("Nil", "(Mem)", PTR_CELL);
     x = ramSym("Nil", "(Mem)", PTR_CELL);
+    insert(&Intern, "Nil", x);
+
+    x = ramSym("T", "(Mem)", PTR_CELL);
     insert(&Intern, "Nil", x);
 
     do

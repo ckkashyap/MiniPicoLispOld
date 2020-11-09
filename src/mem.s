@@ -13,4 +13,7 @@ setq {doSetq}
 make {doMake}
 link {doLink}
 cons {doCons}
-G ((X)(+  1 2))
+= {doEq}
+if {doIf}
+G ((X)(+  1 2 X))
+Z 10
