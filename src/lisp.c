@@ -1330,6 +1330,12 @@ void prTransient(any nm) {
 
 /* Print one expression */
 void print(any x) {
+   if (x == T)
+   {
+      printf("T");
+      return;
+   }
+
    if (isNum(x))
    {
       outNum(unBox(x));
