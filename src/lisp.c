@@ -74,9 +74,18 @@ int isList(any cell)
 }
 
 
-#include "sym.d"
-#undef T
-#undef Nil
+//////////////////////////////////////////////////////////
+// TODO this has to be fixed
+#define Quote (any)(Rom+7)
+any doQuote(any);
+#define At (any)(Ram+1)
+#define At2 (any)(Ram+3)
+#define At3 (any)(Ram+5)
+
+#define ROMS 18
+#define RAMS 34
+//////////////////////////////////////////////////////////
+
 #include "def.d"
 #include "mem.d"
 
@@ -368,14 +377,39 @@ FILE *InFile, *OutFile;
 any Intern[2], Transient[2];
 any ApplyArgs, ApplyBody;
 
+//////////////////////////////////////////////////////////// TODO THIS SHOULD BE REMOVED
 /* ROM Data */
 any const __attribute__ ((__aligned__(2*WORD))) Rom[] = {
-   #include "rom.d"
+(any)0x98929d, (any)(Rom+1),
+(any)(Rom+1), (any)(Rom+1),
+(any)0xa9, (any)(Rom+5),
+(any)0xcae8deeae3, (any)(num(doQuote) + 2),
+(any)10, (any)(Rom+1),
+(any)6, (any)(Rom+8),
+(any)(Ram+9), (any)(Rom+10),
+(any)(Rom+12), (any)(Rom+1),
+(any)(Rom+1), (any)(Rom+14),
 };
 
 /* RAM Symbols */
 any __attribute__ ((__aligned__(2*WORD))) Ram[] = {
-   #include "ram.d"
+(any)0x81, (any)(Rom+1),
+(any)0x8081, (any)(Rom+1),
+(any)0x808081, (any)(Rom+1),
+(any)0xcaf2c5, (any)(num(doBye) + 2),
+(any)0x57, (any)(num(doAdd) + 2),
+(any)0xcac9, (any)(num(doDe) + 2),
+(any)0xe8cad9, (any)(num(doLet) + 2),
+(any)0xd8dcd2e4e1, (any)(num(doPrin) + 2),
+(any)0xdec9, (any)(num(doDo) + 2),
+(any)0xccd3, (any)(num(doIf) + 2),
+(any)0x7b, (any)(num(doEq) + 2),
+(any)0xe4decd, (any)(num(doFor) + 2),
+(any)0xe2e8cae7, (any)(num(doSetq) + 2),
+(any)0xcad6c2db, (any)(num(doMake) + 2),
+(any)0xd6dcd2d9, (any)(num(doLink) + 2),
+(any)0xe6dcdec7, (any)(num(doCons) + 2),
+(any)0x8f, (any)(Rom+16),
 };
 
 ///////////////////////////////////////////////
