@@ -1585,8 +1585,9 @@ any doEq(any x) {
    cell c1;
 
    x = cdr(x),  Push(c1, EVAL(car(x)));
-   while (isCell(x = cdr(x)))
-      if (data(c1) != EVAL(car(x))) {
+   while (Nil != (x = cdr(x)))
+      //if (data(c1) != EVAL(car(x))) { // TODO CHECK IT OUT
+      if (car(data(c1)) != car(EVAL(car(x)))) {
          drop(c1);
          return Nil;
       }
@@ -2033,7 +2034,6 @@ void giveup(char *msg) {
 }
 
 void bye(int n) {
-   printf("BYE BYE\n");
    exit(n);
 }
 

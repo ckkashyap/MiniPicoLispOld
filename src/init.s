@@ -11,7 +11,7 @@ let {doLet}
 prinl {doPrin}
 do {doDo}
 if {doIf}
-== {doEq}
+= {doEq}
 for {doFor}
 setq {doSetq}
 make {doMake}
