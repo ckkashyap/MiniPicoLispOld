@@ -527,7 +527,11 @@ int main(int ac, char *av[])
                 }
 
                 //print(buf, x);
-                fprintf(fpSYM, " (any)%s/*AA*/\n", buf);
+                fprintf(fpSYM, " (any)(Mem+9)\n", buf);
+                sprintf(buf, "((any)(Mem + 0))");
+                MemGen[x+1] = strdup(buf);
+                sprintf(buf, "0x%x", mkType(TXT, PTR_CELL));
+                MemGen[x+2] = strdup(buf);
             }
 
             if (skip() == '{')
