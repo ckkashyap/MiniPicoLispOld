@@ -78,9 +78,6 @@ int isList(any cell)
 // TODO this has to be fixed
 #define Quote (any)(Rom+7)
 any doQuote(any);
-//#define At (any)(Ram+1)
-#define At2 (any)(Ram+3)
-#define At3 (any)(Ram+5)
 
 #define ROMS 18
 #define RAMS 34
