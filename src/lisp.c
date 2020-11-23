@@ -1297,6 +1297,7 @@ any load(any ex, int pr, any x) {
       }
       Save(c1);
       if (InFile != stdin || Chr || !pr)
+          // TODO - WHY @ does not work in files
          x = EVAL(data(c1));
       else {
          Push(c2, val(At));
