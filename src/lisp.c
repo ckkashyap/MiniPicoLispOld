@@ -752,7 +752,8 @@ any doMake(any x) {
    make = Env.make;
    yoke = Env.yoke;
    Env.make = Env.yoke = &data(c1);
-   while (isCell(x = cdr(x)))
+   //while (isCell(x = cdr(x)))
+   while (Nil != (x = cdr(x)))
       if (isCell(car(x)))
          evList(car(x));
    Env.yoke = yoke;
@@ -1337,6 +1338,12 @@ void print(any x) {
    if (x == T)
    {
       printf("T");
+      return;
+   }
+
+   if (x == Nil)
+   {
+      printf("Nil");
       return;
    }
 
