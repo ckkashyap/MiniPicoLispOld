@@ -753,7 +753,7 @@ any doLink(any x) {
    do {
       y = EVAL(car(x));
       Env.make = &cdr(*Env.make = cons(y, Nil));
-   } while (isCell(x = cdr(x)));
+   } while (Nil != (x = cdr(x)));
    return y;
 }
 
