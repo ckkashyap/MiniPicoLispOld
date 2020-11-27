@@ -17,4 +17,6 @@ setq {doSetq}
 make {doMake}
 link {doLink}
 cons {doCons}
+car {doCar}
+cdr {doCdr}
 G (()(+  1 2))

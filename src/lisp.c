@@ -699,6 +699,20 @@ any doHide(any ex) {
    return Nil;
 }
 
+// (c...r 'lst) -> any
+any doCar(any ex) {
+   any x = cdr(ex);
+   x = EVAL(car(x));
+   NeedLst(ex,x);
+   return car(x);
+}
+
+any doCdr(any ex) {
+   any x = cdr(ex);
+   x = EVAL(car(x));
+   NeedLst(ex,x);
+   return cdr(x);
+}
 
 any doCons(any x) {
    any y;
@@ -706,7 +720,7 @@ any doCons(any x) {
 
    x = cdr(x);
    Push(c1, y = cons(EVAL(car(x)),Nil));
-   while (isCell(cdr(x = cdr(x))))
+   while (Nil != (cdr(x = cdr(x))))
       y = cdr(y) = cons(EVAL(car(x)),Nil);
    cdr(y) = EVAL(car(x));
    return Pop(c1);

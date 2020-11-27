@@ -3,10 +3,6 @@
 @@@ [At3] Nil
 bye {doBye}
 de {doDe}
-d {doDe}
-c {doDe}
-b {doDe}
-a {doDe}
 + {doAdd}
 let {doLet}
 prinl {doPrin}
@@ -16,6 +12,8 @@ setq {doSetq}
 make {doMake}
 link {doLink}
 cons {doCons}
+car {doCar}
+cdr {doCdr}
 = {doEq}
 if {doIf}
 G ((X)(+  1 2 X))

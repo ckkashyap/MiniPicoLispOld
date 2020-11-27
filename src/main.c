@@ -631,6 +631,20 @@ any doHide(any ex) {
    return Nil;
 }
 
+// (c...r 'lst) -> any
+any doCar(any ex) {
+   any x = cdr(ex);
+   x = EVAL(car(x));
+   NeedLst(ex,x);
+   return car(x);
+}
+
+any doCdr(any ex) {
+   any x = cdr(ex);
+   x = EVAL(car(x));
+   NeedLst(ex,x);
+   return cdr(x);
+}
 
 any doCons(any x) {
    any y;
