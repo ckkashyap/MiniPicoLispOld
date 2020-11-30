@@ -25,6 +25,9 @@
 (prinl 456)
 
 
+(let X 0 (do 3 (prinl X) (setq X (+ 1 X))))
+
+
 
 (setq L4 (make (link 1) (link 2) (link 3) ) )
 (prinl (car L4))
