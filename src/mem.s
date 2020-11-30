@@ -1,13 +1,13 @@
 @ [At] Nil
 @@ [At2] Nil
 @@@ [At3] Nil
+Zero [Zero] 0
 bye {doBye}
 de {doDe}
 + {doAdd}
 let {doLet}
 prinl {doPrin}
 do {doDo}
-for {doFor}
 setq {doSetq}
 make {doMake}
 link {doLink}
