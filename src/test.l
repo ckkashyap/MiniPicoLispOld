@@ -3,6 +3,13 @@
          (let (AA 20 BB 30)
         (+ A AA BB X Y))))
 
+
+(setq G (quote (X)
+ (+ 1 X)))
+
+(prinl (G 1))
+
+
 (prinl (F 1 2))
 
 (prinl (= 1 1))
