@@ -14,6 +14,7 @@ link {doLink}
 cons {doCons}
 car {doCar}
 cdr {doCdr}
+quote {doQuote}
 = {doEq}
 if {doIf}
 G ((X)(+  1 2 X))
