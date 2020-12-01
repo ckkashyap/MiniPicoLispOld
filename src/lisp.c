@@ -2092,7 +2092,7 @@ any evExpr(any expr, any x)
    f->link = Env.bind,  Env.bind = f;
    f->i = (bindSize * (length(y)+2)) / (2*sizeof(any)) - 1;
    f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
-   while (isCell(y))
+   while (y != Nil)
    {
       f->bnd[f->cnt].sym = car(y);
       f->bnd[f->cnt].val = EVAL(car(x));
