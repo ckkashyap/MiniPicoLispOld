@@ -136,6 +136,20 @@ typedef struct catchFrame {
    jmp_buf rst;
 } catchFrame;
 
+
+typedef struct {
+        any sym; any val;
+} bindFrameBind;
+#define bindFrameSize (sizeof(bindFrame))
+#define bindSize (sizeof(bindFrameBind))
+static inline bindFrame *allocFrame(int l)
+{
+    int s1 = bindFrameSize;
+    int s2 = (l - 1) * bindSize;
+    return (bindFrame*)malloc(s1 + s2);
+};
+
+
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, Avail=(p))
 
@@ -848,7 +862,7 @@ void rdOpen(any ex, any x, inFrame *f) {
       f->fp = stdin;
    else {
       int ps = pathSize(x);
-      // TODO - check what can be done for stack
+      // TODO - check what can be done for stack FREE MUST BE ADDED
       //char nm[ps];
       char *nm = (char*)malloc(ps);
 
@@ -860,6 +874,8 @@ void rdOpen(any ex, any x, inFrame *f) {
       }
       else if (!(f->fp = fopen(nm, "r")))
          openErr(ex, nm);
+
+      free(nm);
    }
 }
 
@@ -1180,7 +1196,9 @@ any token(any x, int c) {
       return symToNum(tail(popSym(i, w, p, &c1)), 0, '.', 0);
    }
    if (Chr != '+' && Chr != '-') {
-      char nm[bufSize(x)];
+      // TODO check what needs to be done about stack - FREE MUST BE ADDED
+      // char nm[bufSize(x)];
+      char *nm = (char *)malloc(bufSize(x));
 
       bufString(x, nm);
       if (Chr >= 'A' && Chr <= 'Z' || Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr)) {
@@ -1660,24 +1678,23 @@ any doLet(any x) {
       Unbind(f);
    }
    else {
-      struct {  // bindFrame
-         struct bindFrame *link;
-         int i, cnt;
-         struct {any sym; any val;} bnd[(length(y)+1)/2];
-      } f;
+       // TODO check out how to do stack 
+       bindFrame *f = allocFrame((length(y)+1)/2);
 
-      f.link = Env.bind,  Env.bind = (bindFrame*)&f;
-      f.i = f.cnt = 0;
+      f->link = Env.bind,  Env.bind = f;
+      f->i = f->cnt = 0;
       do {
-         f.bnd[f.cnt].sym = car(y);
-         f.bnd[f.cnt].val = val(car(y));
-         ++f.cnt;
+         f->bnd[f->cnt].sym = car(y);
+         f->bnd[f->cnt].val = val(car(y));
+         ++f->cnt;
          val(car(y)) = EVAL(cadr(y));
       } while (isCell(y = cddr(y)) && y != Nil);
       x = prog(cdr(x));
-      while (--f.cnt >= 0)
-         val(f.bnd[f.cnt].sym) = f.bnd[f.cnt].val;
-      Env.bind = f.link;
+      while (--f->cnt >= 0)
+         val(f->bnd[f->cnt].sym) = f->bnd[f->cnt].val;
+      Env.bind = f->link;
+
+      free(f);
    }
    return x;
 }
@@ -1882,7 +1899,7 @@ any consSym(any val, word w) {
       p = Avail;
    }
    Avail = p->car;
-   p->cdr = val ?: p;
+   p->cdr = val ? val : p;
    p->car = (any)w;
    p->type.parts[0] = TXT;
    return p;
