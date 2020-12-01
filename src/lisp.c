@@ -240,7 +240,7 @@ any EVAL(any x)
       return evList(x);
    }
 }
-#define evSubr(f,x)     (*(fun)(num(f) & ~2))(x)
+#define evSubr(f,x)     (*(fun)(num(f)))(x)
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
