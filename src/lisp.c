@@ -2083,62 +2083,83 @@ void varError(any ex, any x) {err(ex, x, "Variable expected");}
 void protError(any ex, any x) {err(ex, x, "Protected symbol");}
 
 /*** Evaluation ***/
-any evExpr(any expr, any x) {
+any evExpr(any expr, any x)
+{
    any y = car(expr);
-   struct {  // bindFrame
-      struct bindFrame *link;
-      int i, cnt;
-      struct {any sym; any val;} bnd[length(y)+2];
-   } f;
 
-   f.link = Env.bind,  Env.bind = (bindFrame*)&f;
-   f.i = sizeof(f.bnd) / (2*sizeof(any)) - 1;
-   f.cnt = 1,  f.bnd[0].sym = At,  f.bnd[0].val = val(At);
-   //while (isCell(y)) {
-   while (y != Nil) {
-      f.bnd[f.cnt].sym = car(y);
-      f.bnd[f.cnt].val = EVAL(car(x));
-      ++f.cnt, x = cdr(x), y = cdr(y);
+   bindFrame *f = allocFrame(length(y)+2);
+
+   f->link = Env.bind,  Env.bind = f;
+   f->i = (bindSize * (length(y)+2)) / (2*sizeof(any)) - 1;
+   f->cnt = 1,  f->bnd[0].sym = At,  f->bnd[0].val = val(At);
+   while (isCell(y))
+   {
+      f->bnd[f->cnt].sym = car(y);
+      f->bnd[f->cnt].val = EVAL(car(x));
+      ++f->cnt, x = cdr(x), y = cdr(y);
    }
+
    if (isNil(y)) {
-      do {
-         x = val(f.bnd[--f.i].sym);
-         val(f.bnd[f.i].sym) = f.bnd[f.i].val;
-         f.bnd[f.i].val = x;
-      } while (f.i);
+      do
+      {
+         x = val(f->bnd[--f->i].sym);
+         val(f->bnd[f->i].sym) = f->bnd[f->i].val;
+         f->bnd[f->i].val = x;
+      }
+      while (f->i);
+
       x = prog(cdr(expr));
    }
-   else if (y != At) {
-      f.bnd[f.cnt].sym = y,  f.bnd[f.cnt++].val = val(y),  val(y) = x;
-      do {
-         x = val(f.bnd[--f.i].sym);
-         val(f.bnd[f.i].sym) = f.bnd[f.i].val;
-         f.bnd[f.i].val = x;
-      } while (f.i);
+   else if (y != At)
+   {
+      f->bnd[f->cnt].sym = y,  f->bnd[f->cnt++].val = val(y),  val(y) = x;
+      do
+      {
+         x = val(f->bnd[--f->i].sym);
+         val(f->bnd[f->i].sym) = f->bnd[f->i].val;
+         f->bnd[f->i].val = x;
+      }
+      while (f->i);
       x = prog(cdr(expr));
    }
-   else {
+   else
+   {
       int n, cnt;
       cell *arg;
-      cell c[n = cnt = length(x)];
+      cell *c = (cell*)malloc(sizeof(cell) * (n = cnt = length(x)));
 
       while (--n >= 0)
+      {
          Push(c[n], EVAL(car(x))),  x = cdr(x);
-      do {
-         x = val(f.bnd[--f.i].sym);
-         val(f.bnd[f.i].sym) = f.bnd[f.i].val;
-         f.bnd[f.i].val = x;
-      } while (f.i);
+      }
+
+      do
+      {
+         x = val(f->bnd[--f->i].sym);
+         val(f->bnd[f->i].sym) = f->bnd[f->i].val;
+         f->bnd[f->i].val = x;
+      }
+      while (f->i);
+
       n = Env.next,  Env.next = cnt;
       arg = Env.arg,  Env.arg = c;
       x = prog(cdr(expr));
       if (cnt)
+      {
          drop(c[cnt-1]);
+      }
+
       Env.arg = arg,  Env.next = n;
+      free(c);
    }
-   while (--f.cnt >= 0)
-      val(f.bnd[f.cnt].sym) = f.bnd[f.cnt].val;
-   Env.bind = f.link;
+
+   while (--f->cnt >= 0)
+   {
+      val(f->bnd[f->cnt].sym) = f->bnd[f->cnt].val;
+   }
+
+   Env.bind = f->link;
+   free(f);
    return x;
 }
 
