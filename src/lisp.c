@@ -11,10 +11,10 @@
 #define CELLS (1024*1024/sizeof(cell))
 #endif
 
-#define WORD ((int)sizeof(long))
+#define WORD ((int)sizeof(long long))
 #define BITS (8*WORD)
 
-typedef unsigned long word; // TODO - THIS IS USED IN SUBTRACTION !!!!
+typedef unsigned long long word; // TODO - THIS IS USED IN SUBTRACTION !!!!
 typedef unsigned char byte;
 typedef unsigned char *ptr;
 
@@ -154,7 +154,7 @@ static inline bindFrame *allocFrame(int l)
 #define Free(p)         ((p)->car=Avail, Avail=(p))
 
 /* Number access */
-#define num(x)          ((long)(x))
+#define num(x)          ((long long)(x))
 #define txt(n)          ((any)(num(n)<<1|1))
 #define box(n)          ((any)(num(n)<<2|2))
 //#define unBox(n)        (num(n)>>2)
@@ -273,13 +273,13 @@ void argError(any,any) ;
 void atomError(any,any) ;
 void begString(void);
 void brkLoad(any);
-int bufNum(char[BITS/2],long);
+int bufNum(char[BITS/2],long long);
 int bufSize(any);
 void bufString(any,char*);
 void bye(int) ;
 void pairError(any,any) ;
 any circ(any);
-long compare(any,any);
+long long compare(any,any);
 any cons(any,any);
 any consName(word,any);
 any consSym(any,word);
@@ -289,7 +289,7 @@ bool equal(any,any);
 void err(any,any,char*,...) ;
 any evExpr(any,any);
 any evList(any);
-long evNum(any,any);
+long long evNum(any,any);
 any evSym(any);
 void execError(char*) ;
 int firstByte(any);
@@ -314,7 +314,7 @@ int numBytes(any);
 void numError(any,any) ;
 any numToSym(any,int,int,int);
 void outName(any);
-void outNum(long);
+void outNum(long long);
 void outString(char*);
 void pack(any,int*,word*,any*,cell*);
 int pathSize(any);
@@ -342,7 +342,7 @@ void unintern(any,any[2]);
 void unwind (catchFrame*);
 void varError(any,any) ;
 void wrOpen(any,any,outFrame*);
-long xNum(any,any);
+long long xNum(any,any);
 any xSym(any);
 
 /* List length calculation */
@@ -512,14 +512,14 @@ int symBytes(any x) {
 
 any isIntern(any nm, any tree[2]) {
    any x;
-   long n;
+   long long n;
 
    if (isTxt(nm)) {
       //for (x = tree[0];  isCell(x);) {
       for (x = tree[0];  x != Nil;) {
          //if ((n = (word)nm - (word)name(car(x))) == 0)
-         //if ((n = (long)nm - (long)name(car(x))) == 0)
-         if ((n = (long)(car(nm)) - (long)name(caar(x))) == 0)
+         //if ((n = (long long)nm - (long long)name(car(x))) == 0)
+         if ((n = (long long)(car(nm)) - (long long)name(caar(x))) == 0)
             return car(x);
          x = n<0? cadr(x) : cddr(x);
       }
@@ -531,7 +531,7 @@ any isIntern(any nm, any tree[2]) {
 any intern(any sym, any tree[2])
 {
    any nm, x;
-   long n;
+   long long n;
 
    nm = sym;
    //if ((nm = name(sym)) == txt(0))
@@ -545,7 +545,7 @@ any intern(any sym, any tree[2])
    }
    for (;;)
    {
-      if ((n = (long)(car(nm)) - (long)name(caar(x))) == 0)
+      if ((n = (long long)(car(nm)) - (long long)name(caar(x))) == 0)
          return car(x);
 
       //if (!isCell(cdr(x)))
@@ -581,7 +581,7 @@ any intern(any sym, any tree[2])
 
 void unintern(any sym, any tree[2]) {
    any nm, x, y, z, *p;
-   long n;
+   long long n;
 
    if ((nm = name(sym)) == txt(0))
       return;
@@ -1049,7 +1049,7 @@ static any rdList(void) {
 static any anonymous(any s) {
    int c, i;
    word w;
-   unsigned long n;
+   unsigned long long n;
    heap *h;
 
    if ((c = getByte1(&i, &w, &s)) != '$')
@@ -1327,11 +1327,11 @@ void outString(char *s) {
       Env.put(*s++);
 }
 
-int bufNum(char buf[BITS/2], long n) {
+int bufNum(char buf[BITS/2], long long n) {
    return sprintf(buf, "%ld", n);
 }
 
-void outNum(long n) {
+void outNum(long long n) {
    char buf[BITS/2];
 
    bufNum(buf, n);
@@ -1510,7 +1510,7 @@ any symToNum(any sym, int scl, int sep, int ign) {
    int i;
    word w;
    bool sign, frac;
-   long n;
+   long long n;
    any s = sym->car;
 
 
@@ -1566,7 +1566,7 @@ any symToNum(any sym, int scl, int sep, int ign) {
 // (+ 'num ..) -> num
 any doAdd(any ex) {
    any x, y;
-   long n=0;
+   long long n=0;
 
    x = cdr(ex);
    if (isNil(y = EVAL(car(x))))
@@ -1768,14 +1768,14 @@ static void markTail(any x) {
    while (isCell(x)) {
       if (!(num(cdr(x)) & 1))
          return;
-      *(long*)&cdr(x) &= ~1;
+      *(long long*)&cdr(x) &= ~1;
       mark(cdr(x)),  x = car(x);
    }
    if (!isTxt(x))
       do {
          if (!(num(val(x)) & 1))
             return;
-         *(long*)&val(x) &= ~1;
+         *(long long*)&val(x) &= ~1;
       } while (!isNum(x = val(x)));
 }
 
@@ -1783,18 +1783,18 @@ static void mark(any x) {
    while (isCell(x)) {
       if (!(num(cdr(x)) & 1))
          return;
-      *(long*)&cdr(x) &= ~1;
+      *(long long*)&cdr(x) &= ~1;
       mark(car(x)),  x = cdr(x);
    }
    if (!isNum(x)  &&  num(val(x)) & 1) {
-      *(long*)&val(x) &= ~1;
+      *(long long*)&val(x) &= ~1;
       mark(val(x));
       markTail(tail(x));
    }
 }
 
 /* Garbage collector */
-static void gc(long c) {
+static void gc(long long c) {
    any p;
    heap *h;
    int i;
@@ -1803,7 +1803,7 @@ static void gc(long c) {
    do {
       p = h->cells + CELLS-1;
       do
-         *(long*)&cdr(p) |= 1;
+         *(long long*)&cdr(p) |= 1;
       while (--p >= h->cells);
    } while (h = h->next);
    /* Mark */
@@ -1948,7 +1948,7 @@ void heapAlloc(void) {
    heap *h;
    cell *p;
 
-   h = (heap*)((long)alloc(NULL, sizeof(heap) + sizeof(cell)) + (sizeof(cell)-1) & ~(sizeof(cell)-1));
+   h = (heap*)((long long)alloc(NULL, sizeof(heap) + sizeof(cell)) + (sizeof(cell)-1) & ~(sizeof(cell)-1));
    h->next = Heaps,  Heaps = h;
    p = h->cells + CELLS-1;
    do
@@ -2243,7 +2243,7 @@ void printTXT(any cell)
 
 void printNUM(any cell)
 {
-    printf("%lld", (long long int)cell->car);
+    printf("%lld", (long long)cell->car);
 }
 void printCell(any cell)
 {
