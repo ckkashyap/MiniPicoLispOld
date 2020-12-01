@@ -848,7 +848,9 @@ void rdOpen(any ex, any x, inFrame *f) {
       f->fp = stdin;
    else {
       int ps = pathSize(x);
-      char nm[ps];
+      // TODO - check what can be done for stack
+      //char nm[ps];
+      char *nm = (char*)malloc(ps);
 
       pathString(x,nm);
       if (nm[0] == '+') {
