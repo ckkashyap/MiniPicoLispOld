@@ -5,6 +5,8 @@ Zero [Zero] 0
 bye {doBye}
 de {doDe}
 + {doAdd}
+- {doSub}
+* {doMul}
 let {doLet}
 prinl {doPrin}
 do {doDo}

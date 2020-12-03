@@ -35,10 +35,17 @@
 (let X 0 (do 3 (prinl X) (setq X (+ 1 X))))
 
 
-
 (setq L4 (make (link 1) (link 2) (link 3) ) )
 (prinl (car L4))
 (prinl (car (cdr L4)))
 (prinl (car (cdr (cdr L4))))
+
+(setq  FAC1 (quote (N) (if (= N 0) 1 (* N (FAC1 (- N 1))))))
+
+(prinl (FAC1 5))
+
+(setq  FAC2 (quote (N) (if (= N 0) 1 (* N (FAC2 (- N 1))))))
+
+(prinl (FAC2 5))
 
 (bye)

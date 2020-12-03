@@ -6,6 +6,8 @@
 ### System Functions ###
 bye {doBye}
 + {doAdd}
+- {doSub}
+* {doMul}
 de {doDe}
 let {doLet}
 prinl {doPrin}

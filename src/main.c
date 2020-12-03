@@ -1461,6 +1461,42 @@ any doAdd(any ex) {
 }
 
 
+any doSub(any ex) {
+   any x, y;
+   long n;
+
+   x = cdr(ex);
+   if (isNil(y = EVAL(car(x))))
+      return Nil;
+   NeedNum(ex,y);
+   n = unBox(y);
+   while (isCell(x = cdr(x))) {
+      if (isNil(y = EVAL(car(x))))
+         return Nil;
+      NeedNum(ex,y);
+      n -= unBox(y);
+   }
+   return box(n);
+}
+
+any doMul(any ex) {
+   any x, y;
+   long n;
+
+   x = cdr(ex);
+   if (isNil(y = EVAL(car(x))))
+      return Nil;
+   NeedNum(ex,y);
+   n = unBox(y);
+   while (isCell(x = cdr(x))) {
+      if (isNil(y = EVAL(car(x))))
+         return Nil;
+      NeedNum(ex,y);
+      n *= unBox(y);
+   }
+   return box(n);
+}
+
 
 ///////////////////////////////////////////////
 //               math.c END

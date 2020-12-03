@@ -1589,7 +1589,47 @@ any doAdd(any ex) {
    return r;
 }
 
+any doSub(any ex) {
+   any x, y;
+   long long n=0;
 
+   x = cdr(ex);
+   if (isNil(y = EVAL(car(x))))
+      return Nil;
+   NeedNum(ex,y);
+   n = unBox(y);
+   while (Nil != (x = cdr(x))) {
+      if (isNil(y = EVAL(car(x))))
+         return Nil;
+      NeedNum(ex,y);
+      n -= unBox(y);
+   }
+
+   any r = cons((any)n, Nil);
+   r->type.parts[0] = NUM;
+   return r;
+}
+
+any doMul(any ex) {
+   any x, y;
+   long long n=0;
+
+   x = cdr(ex);
+   if (isNil(y = EVAL(car(x))))
+      return Nil;
+   NeedNum(ex,y);
+   n = unBox(y);
+   while (Nil != (x = cdr(x))) {
+      if (isNil(y = EVAL(car(x))))
+         return Nil;
+      NeedNum(ex,y);
+      n *= unBox(y);
+   }
+
+   any r = cons((any)n, Nil);
+   r->type.parts[0] = NUM;
+   return r;
+}
 
 ///////////////////////////////////////////////
 //               math.c END
