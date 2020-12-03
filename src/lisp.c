@@ -1214,9 +1214,13 @@ any token(any x, int c) {
          }
          y = popSym(i, w, p, &c1);
          if (x = isIntern(tail(y), Intern))
+         {
+             free(nm);
             return x;
+         }
          intern(y, Intern);
          val(y) = Nil;
+         free(nm);
          return y;
       }
    }
