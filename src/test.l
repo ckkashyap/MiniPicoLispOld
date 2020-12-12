@@ -34,7 +34,6 @@
 
 (let X 0 (do 3 (prinl X) (setq X (+ 1 X))))
 
-
 (de DO (N F)
        (if (= N 0)
            Nil
@@ -43,11 +42,22 @@
 
 
 (de MKLST (N)
-    (make (DO N (quote () (link 1)))))
+    (make (do N (link 1))))
+    #(make (DO N (quote () (link 1)))))
 
 (de LEN (L)
-    (if (= Nil L) 0 (+ 1 (LEN (cdr L)))))
+    (let LL 0 
+         (do (* 10 10 10 10 10 10 10)
+         (if (= Nil L)
+             LL
+             (setq LL (+ 1 LL))
+             (setq L (cdr L))
+         )
+         )
 
+         LL
+     )
+)
 
 
 (setq L4 (make (link 1) (link 2) (link 3) ) )
@@ -62,5 +72,11 @@
 (setq  FAC2 (quote (N) (if (= N 0) 1 (* N (FAC2 (- N 1))))))
 
 (prinl (FAC2 5))
+
+(setq MILL (* 1000 1000))
+
+(setq Z (MKLST (+ 1234 MILL)))
+
+(prinl (LEN Z))
 
 (bye)

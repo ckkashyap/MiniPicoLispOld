@@ -73,6 +73,17 @@ int isList(any cell)
     return cell->type.parts[2];
 }
 
+void setMark(any cell, int m)
+{
+    cell->type.parts[3] = m;
+}
+
+int getMark(any cell)
+{
+    return cell->type.parts[3];
+}
+
+
 
 //////////////////////////////////////////////////////////
 // TODO this has to be fixed
@@ -1807,34 +1818,17 @@ any doDo(any x) {
 
 static void mark(any);
 
-/* Mark data */
-static void markTail(any x) {
-   while (isCell(x)) {
-      if (!(num(cdr(x)) & 1))
-         return;
-      *(long long*)&cdr(x) &= ~1;
-      mark(cdr(x)),  x = car(x);
-   }
-   if (!isTxt(x))
-      do {
-         if (!(num(val(x)) & 1))
-            return;
-         *(long long*)&val(x) &= ~1;
-      } while (!isNum(x = val(x)));
-}
-
 static void mark(any x) {
-   while (isCell(x)) {
-      if (!(num(cdr(x)) & 1))
-         return;
-      *(long long*)&cdr(x) &= ~1;
-      mark(car(x)),  x = cdr(x);
-   }
-   if (!isNum(x)  &&  num(val(x)) & 1) {
-      *(long long*)&val(x) &= ~1;
-      mark(val(x));
-      markTail(tail(x));
-   }
+    if (!x) return;
+
+    if (x == Nil) return;
+
+    if (getMark(x)) return;
+
+    setMark(x, 1);
+
+    if (getCARType(x) == PTR_CELL) mark(car(x));
+    if (getCDRType(x) == PTR_CELL) mark(cdr(x));
 }
 
 /* Garbage collector */
@@ -1843,33 +1837,32 @@ static void gc(long long c) {
    heap *h;
    int i;
 
-   h = Heaps;
-   do {
-      p = h->cells + CELLS-1;
-      do
-         *(long long*)&cdr(p) |= 1;
-      while (--p >= h->cells);
-   } while (h = h->next);
+   write(2, "GC CALLED\n", 10);
+heapAlloc();
+return;
+
+
    /* Mark */
-   for (i = 0;  i < RAMS;  i += 2) {
-      markTail(Ram[i]);
-      mark(Ram[i+1]);
-   }
    mark(Intern[0]),  mark(Intern[1]);
    mark(Transient[0]), mark(Transient[1]);
    mark(ApplyArgs),  mark(ApplyBody);
    for (p = Env.stack; p; p = cdr(p))
       mark(car(p));
    for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
-      for (i = ((bindFrame*)p)->cnt;  --i >= 0;) {
+   {
+      for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
+      {
          mark(((bindFrame*)p)->bnd[i].sym);
          mark(((bindFrame*)p)->bnd[i].val);
       }
+   }
    for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
+       printf("Marking catch frames\n");
       if (((catchFrame*)p)->tag)
          mark(((catchFrame*)p)->tag);
       mark(((catchFrame*)p)->fin);
    }
+
    /* Sweep */
    Avail = NULL;
    h = Heaps;
@@ -1877,30 +1870,21 @@ static void gc(long long c) {
       do {
          p = h->cells + CELLS-1;
          do
-            if (num(p->cdr) & 1)
-               Free(p),  --c;
+         {
+            if (!getMark(p))
+            {
+               Free(p);
+               --c;
+            }
+            setMark(p, 0);
+         }
          while (--p >= h->cells);
       } while (h = h->next);
-      while (c >= 0)
-         heapAlloc(),  c -= CELLS;
-   }
-   else {
-      heap **hp = &Heaps;
-      cell *av;
 
-      do {
-         c = CELLS;
-         av = Avail;
-         p = h->cells + CELLS-1;
-         do
-            if (num(p->cdr) & 1)
-               Free(p),  --c;
-         while (--p >= h->cells);
-         if (c)
-            hp = &h->next,  h = h->next;
-         else
-            Avail = av,  h = h->next,  free(*hp),  *hp = h;
-      } while (h);
+      while (c >= 0)
+      {
+         heapAlloc(),  c -= CELLS;
+      }
    }
 }
 
@@ -1909,14 +1893,13 @@ any cons(any x, any y) {
    cell *p;
 
    if (!(p = Avail)) {
-      // cell c1, c2;
+      cell c1, c2;
 
-      // Push(c1,x);
-      // Push(c2,y);
-      // gc(CELLS);
-      // drop(c1);
-      // p = Avail;
-      giveup("GC REQUIRED");
+      Push(c1,x);
+      Push(c2,y);
+      gc(CELLS);
+      drop(c1);
+      p = Avail;
    }
    Avail = p->car;
    p->car = x;
