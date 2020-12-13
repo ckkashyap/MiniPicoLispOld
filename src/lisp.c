@@ -1109,7 +1109,7 @@ static any read0(bool top) {
    }
    if (Chr == '\'') {
       Env.get();
-      return cons(Quote, read0(top));
+      return cons(doQuote_D, read0(top));
    }
    if (Chr == ',') {
       Env.get();
