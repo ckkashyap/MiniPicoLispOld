@@ -1147,21 +1147,42 @@ static any read0(bool top) {
    if (Chr == '\\')
       Env.get();
    putByte1(Chr, &i, &w, &p);
-   for (;;) {
-      Env.get();
-      if (strchr(Delim, Chr))
-         break;
-      if (Chr == '\\')
-         Env.get();
-      putByte(Chr, &i, &w, &p, &c1);
+
+   int count=0;
+   for (;;)
+   {
+       count++;
+       if (count > 6)
+       {
+           printf("%s too long\n", &w);
+           bye(0);
+       }
+       Env.get();
+       if (strchr(Delim, Chr))
+       {
+           break;
+       }
+       if (Chr == '\\')
+       {
+           Env.get();
+       }
+       putByte(Chr, &i, &w, &p, &c1);
    }
+
    y = popSym(i, w, p, &c1);
    if (x = symToNum(tail(y), 0, '.', 0))
+   {
       return x;
+   }
    if (x = anonymous(name(y)))
+   {
       return x;
+   }
    if (x = isIntern(tail(y), Intern))
+   {
       return x;
+   }
+
    intern(y, Intern);
    val(y) = Nil;
    return y;
