@@ -9,6 +9,9 @@
 
 (prinl (G 1))
 
+(setq H '( (X) (+ 1 X)))
+(prinl (H 1))
+
 
 (prinl (F 1 2))
 
