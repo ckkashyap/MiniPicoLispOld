@@ -536,6 +536,7 @@ int main(int ac, char *av[])
 
             if (skip() == '{')
             {                   // Function pointer
+                fprintf(fpSYM, "#define ");
                 for (p = Token;;)
                 {
                     Chr = getchar();
@@ -551,9 +552,11 @@ int main(int ac, char *av[])
                     }
 
                     *p++ = Chr;
+                    putc(Chr, fpSYM);
                 }
 
                 *p = '\0';
+                fprintf(fpSYM, "_D (any)(Mem+%d)\n", x);
                 sprintf(buf, "((any)(%s))", Token);
                 MemGen[x+1] = strdup(buf);
                 sprintf(buf, "0x%x", mkType(TXT, FUNC));
