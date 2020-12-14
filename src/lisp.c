@@ -321,7 +321,6 @@ any mkSym(byte*);
 any mkStr(char*);
 any mkTxt(int);
 any name(any);
-int numBytes(any);
 void numError(any,any) ;
 any numToSym(any,int,int,int);
 void outName(any);
@@ -1524,21 +1523,6 @@ any doPrin(any x) {
 //               math.c START
 ///////////////////////////////////////////////
 
-/* Number of bytes */
-int numBytes(any x) {
-   int n = 4;
-   word w = (word)x >> 2;
-
-   if ((w & 0xFF000000) == 0) {
-      --n;
-      if ((w & 0xFF0000) == 0) {
-         --n;
-         if ((w & 0xFF00) == 0)
-            --n;
-      }
-   }
-   return n;
-}
 
 /* Make number from symbol */
 any symToNum(any sym, int scl, int sep, int ign) {
@@ -1858,7 +1842,8 @@ static void gc(long long c) {
    heap *h;
    int i;
 
-   write(2, "GC CALLED\n", 10);
+   //write(2, "GC CALLED\n", 10);
+   printf("GC CALLED %p\n", Env.stack->cdr->car);
 heapAlloc();
 return;
 
