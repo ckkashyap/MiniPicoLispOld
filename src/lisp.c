@@ -1726,6 +1726,15 @@ any doMeth(any ex) {
 
 // (let sym 'any . prg) -> any
 // (let (sym 'any ..) . prg) -> any
+/*
+ * Bind essentially backs up the symbols
+ * For example if you have 
+ * (setq X 10)
+ * (let (X 20) X)
+ * In this case the value 10 of X should be backed up
+ * and restored after the let binding
+ *
+ */
 any doLet(any x) {
    any y;
 
