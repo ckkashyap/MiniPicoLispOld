@@ -1835,14 +1835,46 @@ static void mark(any);
 static void mark(any x) {
     if (!x) return;
 
-    if (x == Nil) return;
-
     if (getMark(x)) return;
 
     setMark(x, 1);
 
+    if (x == Nil) return;
+
     if (getCARType(x) == PTR_CELL) mark(car(x));
     if (getCDRType(x) == PTR_CELL) mark(cdr(x));
+}
+
+int FIRST_DUMP=1;
+void dumpMem()
+{
+    FILE *mem;
+    if (FIRST_DUMP) mem = fopen("debug.mem", "w");
+    else mem = fopen("debug.mem", "a+");
+    FIRST_DUMP=0;
+
+    fprintf(mem, "# START MEM\n");
+    for (int i = 0; i < MEMS; i += 3)
+    {
+        fprintf(mem, "0x%016lx %p %p %p\n", &Mem[i], Mem[i], Mem[i + 1], Mem[i + 2]);
+    }
+
+    heap *h = Heaps;
+    any p;
+
+    do
+    {
+        fprintf(mem, "# START HEAPS\n");
+        p = h->cells + CELLS-1;
+        do
+        {
+            fprintf(mem, "# START HEAP\n");
+            fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
+        }
+        while (--p >= h->cells);
+    } while (h = h->next);
+
+    fclose(mem);
 }
 
 /* Garbage collector */
@@ -1851,18 +1883,27 @@ static void gc(long long c) {
    heap *h;
    int i;
 
-   //write(2, "GC CALLED\n", 10);
-   printf("GC CALLED %p\n", Env.stack->cdr->car);
+
+   write(2, "GC CALLED\n", 10);
+   dumpMem();
+   //printf("GC CALLED %p\n", Env.stack->cdr->car);
 heapAlloc();
 return;
 
+
+   for (int i = 0; i < MEMS; i += 3)
+   {
+       mark(&Mem[i]);
+   }
 
    /* Mark */
    mark(Intern[0]),  mark(Intern[1]);
    mark(Transient[0]), mark(Transient[1]);
    mark(ApplyArgs),  mark(ApplyBody);
    for (p = Env.stack; p; p = cdr(p))
+   {
       mark(car(p));
+   }
    for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
    {
       for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
