@@ -281,6 +281,8 @@ extern any ApplyArgs, ApplyBody;
 extern any const Rom[];
 extern any Ram[];
 
+static void gc(long long c);
+word getHeapSize();
 /* Prototypes */
 void *alloc(void*,size_t);
 any apply(any,any,bool,int,cell*);
@@ -1352,6 +1354,9 @@ any load(any ex, int pr, any x) {
          x = val(At) = EVAL(data(c1));
          val(At3) = val(At2),  val(At2) = data(c2);
          outString("-> "),  fflush(OutFile),  print(x),  newline();
+         getHeapSize();
+         gc(CELLS);
+         getHeapSize();
       }
       drop(c1);
    }
@@ -1692,6 +1697,8 @@ static void redefine(any ex, any s, any x) {
    if (!isNil(val(s))  &&  s != val(s)  &&  !equal(x,val(s)))
       redefMsg(s,NULL);
    val(s) = x;
+
+   setCDRType(s, PTR_CELL); // TODO - DO IT MORE NEATLY
 }
 
 // (quote . any) -> any
@@ -1887,13 +1894,13 @@ void dump(FILE *fp, any p)
     }
 }
 
-void sweep()
+void sweep(int free)
 {
    any p;
    heap *h;
    int i, c =100;
    /* Sweep */
-   //Avail = NULL;
+   if(free)Avail = NULL;
    h = Heaps;
    if (c) {
       do {
@@ -1903,10 +1910,10 @@ void sweep()
             if (!getMark(p))
             {
                 printf("FREEING %p  .... \n", p);
-               //Free(p);
+                if (free) Free(p);
                --c;
             }
-            //setMark(p, 0);
+            if(free)setMark(p, 0);
          }
          while (--p >= h->cells);
       } while (h = h->next);
@@ -1916,24 +1923,51 @@ void sweep()
       //   heapAlloc(),  c -= CELLS;
       //}
    }
+
+   printf("AVAIL = %p\n", Avail);
+}
+
+
+void dumpHeaps(FILE *mem, heap *h)
+{
+    any p;
+    if (!h) return;
+    dumpHeaps(mem, h->next);
+
+    fprintf(mem, "# START HEAP\n");
+    p = h->cells + CELLS-1;
+    do
+    {
+        //fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
+        dump(mem, p);
+    }
+    while (--p >= h->cells);
 }
 
 any doDump(any ignore)
 {
     return ignore;
-
     static int COUNT=0;
     char debugFileName[100];
     sprintf(debugFileName, "debug-%03d.mem", COUNT++);
-    int FIRST_DUMP=0;
     if (T == cadr(ignore))
     {
-        FIRST_DUMP=1;
+        markAll();
+        sweep(0);
+    }
+    if ( 0 == car(cadr(ignore)))
+    {
+        markAll();
+        sweep(1);
+    }
+
+    if ( 0 == car(cadr(ignore)))
+    {
+        gc(CELLS);
     }
 
     FILE *mem;
     mem = fopen(debugFileName, "w");
-    FIRST_DUMP=0;
 
     fprintf(mem, "# START MEM\n");
     for (int i = 0; i < MEMS; i += 3)
@@ -1945,22 +1979,20 @@ any doDump(any ignore)
     heap *h = Heaps;
     any p;
 
-    do
-    {
-        fprintf(mem, "# START HEAP\n");
-        p = h->cells + CELLS-1;
-        do
-        {
-            //fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
-            dump(mem, p);
-        }
-        while (--p >= h->cells);
-    } while (h = h->next);
+    dumpHeaps(mem, h);
+    // do
+    // {
+    //     fprintf(mem, "# START HEAP\n");
+    //     p = h->cells + CELLS-1;
+    //     do
+    //     {
+    //         //fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
+    //         dump(mem, p);
+    //     }
+    //     while (--p >= h->cells);
+    // } while (h = h->next);
 
     fclose(mem);
-
-    markAll();
-    //sweep();
 
     return Nil;
 }
@@ -2006,6 +2038,32 @@ MARKER = 8;
          mark(((catchFrame*)p)->tag);
       mark(((catchFrame*)p)->fin);
    }
+}
+
+word getHeapSize()
+{
+    word size = 0;
+    word sizeFree = 0;
+    heap *h = Heaps;
+    do {
+        any p = h->cells + CELLS-1;
+        do
+        {
+            size++;
+        }
+        while (--p >= h->cells);
+    } while (h = h->next);
+
+    any p = Avail;
+    while (p)
+    {
+        sizeFree++;
+        p = car(p);
+    }
+
+    printf("MEM SIZE = %lld FREE = %lld Nil = %p\n", size, sizeFree, Nil);
+
+    return size;
 }
 
 /* Garbage collector */
@@ -2059,8 +2117,6 @@ static void gc(long long c) {
    markAll();
    doDump(Nil);
 
-   heapAlloc();
-   return;
 
 
 
@@ -2074,9 +2130,13 @@ static void gc(long long c) {
          {
             if (!getMark(p))
             {
-                printf("Freeing %p\n", p);
+                //printf("Freeing %p\n", p);
                 Free(p);
                --c;
+            }
+            else
+            {
+                //printf("Keeping %p\n", p);
             }
             setMark(p, 0);
          }
@@ -2084,7 +2144,7 @@ static void gc(long long c) {
       } while (h = h->next);
 
 
-      //printf("C = %lld\n", c);
+      printf("C = %lld\n", c);
 
       while (c >= 0)
       {
@@ -2093,6 +2153,9 @@ static void gc(long long c) {
    }
 
 //heapAlloc();
+//
+   printf("GC RETURNING AVAIL=%p\n", Avail);
+   doDump(Nil);
    return;
 }
 
@@ -2191,6 +2254,9 @@ void *alloc(void *p, size_t siz) {
 void heapAlloc(void) {
    heap *h;
    cell *p;
+
+
+   printf("HEAP ALLOC CALLED\n");
 
    h = (heap*)((long long)alloc(NULL, sizeof(heap) + sizeof(cell)) + (sizeof(cell)-1) & ~(sizeof(cell)-1));
    h->next = Heaps,  Heaps = h;
@@ -2533,6 +2599,7 @@ int main(int ac, char *av[])
    AV = av;
    heapAlloc();
    doDump(Nil);
+   getHeapSize();
    //CELLS = 1;
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
@@ -2575,6 +2642,7 @@ int main(int ac, char *av[])
    ApplyBody = cons(Nil, Nil);
 
    doDump(Nil);
+   getHeapSize();
    loadAll(NULL);
    while (!feof(stdin))
       load(NULL, ':', Nil);
