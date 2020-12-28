@@ -59,11 +59,13 @@ CellPartType getCDRType(any cell)
 
 void setCARType(any cell, CellPartType type)
 {
+    if (!cell) return;
     cell->type.parts[0] = type;
 }
 
 void setCDRType(any cell, CellPartType type)
 {
+    if (!cell) return;
     cell->type.parts[1] = type;
 }
 
@@ -211,6 +213,8 @@ any tail1(any x)
 #define data(c)         ((c).car)
 #define Save(c)         ((c).cdr=Env.stack, Env.stack=&(c))
 #define drop(c)         (Env.stack=(c).cdr)
+//#define Push(c,x)       (data(c)=(x),setCARType(&(c), PTR_CELL), setCDRType(&(c), UNDEFINED), printf("PUSH at %x %d\n", Chr, __LINE__), Save(c))
+//#define Push(c,x)       (data(c)=(x), printf("PUSH at %x %d\n", Chr, __LINE__), Save(c))
 #define Push(c,x)       (data(c)=(x), Save(c))
 #define Pop(c)          (drop(c), data(c))
 
@@ -1021,12 +1025,16 @@ static any rdList(void) {
       }
       if (Chr == ']')
          return Nil;
-      if (Chr != '~') {
-         Push(c1, x = cons(read0(NO),Nil));
+      if (Chr != '~')
+      {
+          x = cons(read0(NO),Nil);
+         Push(c1, x);
          break;
       }
       Env.get();
-      Push(c1, read0(NO));
+
+      x = read0(NO);
+      Push(c1, x);
       if (isCell(x = data(c1) = EVAL(data(c1)))) {
          while (isCell(cdr(x)))
             x = cdr(x);
@@ -1594,7 +1602,9 @@ any symToNum(any sym, int scl, int sep, int ign) {
    //return box(sign? -n : n);
 
 
-   any r = cons((any)n, Nil);
+   any r = cons(Nil, Nil);
+   //any r = cons(n, Nil);
+   r->car = n;
    r->type.parts[0] = NUM;
    
    return r;
@@ -1946,7 +1956,7 @@ void dumpHeaps(FILE *mem, heap *h)
 
 any doDump(any ignore)
 {
-    return ignore;
+    //return ignore;
     static int COUNT=0;
     char debugFileName[100];
     sprintf(debugFileName, "debug-%03d.mem", COUNT++);
@@ -2020,6 +2030,7 @@ MARKER = 5;
 MARKER = 6;
    for (p = Env.stack; p; p = cdr(p))
    {
+       printf("STACK MARKING START %p\n", p);
       mark(car(p));
    }
 MARKER = 7;
@@ -2072,6 +2083,9 @@ static void gc(long long c) {
    heap *h;
    int i;
 
+
+   //heapAlloc();
+   //return;
 
    printf("GC CALLED\n");
    doDump(Nil);
