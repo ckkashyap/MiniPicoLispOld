@@ -8,8 +8,11 @@
 #include <stdint.h>
 
 #ifndef CELLS
-#define CELLS (1024*1024/sizeof(cell))
+//#define CELLS (1*sizeof(cell))
+#define CELLS 48 
 #endif
+
+//int CELLS = 48;
 
 #define WORD ((int)sizeof(long long))
 #define BITS (8*WORD)
@@ -41,6 +44,7 @@ typedef enum
     NUM,
     FUNC,
     PTR_CELL,
+    INTERN,
 } CellPartType;
 
 CellPartType getCARType(any cell)
@@ -162,7 +166,7 @@ static inline bindFrame *allocFrame(int l)
 
 
 /*** Macros ***/
-#define Free(p)         ((p)->car=Avail, Avail=(p))
+#define Free(p)         ((p)->car=Avail, (p)->cdr=0, (p)->type._t=0,  Avail=(p))
 
 /* Number access */
 #define num(x)          ((long long)(x))
@@ -291,6 +295,7 @@ void bye(int) ;
 void pairError(any,any) ;
 any circ(any);
 long long compare(any,any);
+any consIntern(any,any);
 any cons(any,any);
 any consName(word,any);
 any consSym(any,word);
@@ -550,7 +555,7 @@ any intern(any sym, any tree[2])
    x = tree[0];
    if (Nil == x)
    {
-      tree[0] = cons(sym, Nil);
+      tree[0] = consIntern(sym, Nil);
       return sym;
    }
    for (;;)
@@ -561,7 +566,7 @@ any intern(any sym, any tree[2])
       //if (!isCell(cdr(x)))
       if (Nil == cdr(x))
       {
-         cdr(x) = n < 0 ? cons(cons(sym, Nil), Nil) : cons(Nil, cons(sym, Nil));
+         cdr(x) = n < 0 ? consIntern(consIntern(sym, Nil), Nil) : consIntern(Nil, consIntern(sym, Nil));
          return sym;
       }
       if (n < 0)
@@ -571,7 +576,7 @@ any intern(any sym, any tree[2])
             x = cadr(x);
          else
          {
-            cadr(x) = cons(sym, Nil);
+            cadr(x) = consIntern(sym, Nil);
             return sym;
          }
       }
@@ -582,7 +587,7 @@ any intern(any sym, any tree[2])
             x = cddr(x);
          else
          {
-            cddr(x) = cons(sym, Nil);
+            cddr(x) = consIntern(sym, Nil);
             return sym;
          }
       }
@@ -747,6 +752,7 @@ any doCons(any x) {
    while (Nil != (cdr(x = cdr(x))))
       y = cdr(y) = cons(EVAL(car(x)),Nil);
    cdr(y) = EVAL(car(x));
+   doDump(Nil);
    return Pop(c1);
 }
 
@@ -1421,7 +1427,7 @@ void print(any x) {
       outNum(unBox(x));
       return;
    }
-   printf ("TODO NOT A NUMBER\n");
+   printf ("TODO NOT A NUMBER %p %p\n", x, Nil);
    return;
 
    if (isSym(x)) {
@@ -1471,6 +1477,12 @@ void print(any x) {
 }
 
 void prin(any x) {
+    if (x == Nil)
+    {
+         printf("T");
+         return;
+    }
+
    if (!isNil(x)) {
       if (isNum(x))
          outNum(unBox(x));
@@ -1832,31 +1844,102 @@ any doDo(any x) {
 
 static void mark(any);
 
+int MARKER = 0;
+
 static void mark(any x) {
     if (!x) return;
 
     if (getMark(x)) return;
 
-    setMark(x, 1);
+    setMark(x, MARKER);
 
     if (x == Nil) return;
 
-    if (getCARType(x) == PTR_CELL) mark(car(x));
-    if (getCDRType(x) == PTR_CELL) mark(cdr(x));
+    if (getCARType(x) == PTR_CELL || getCARType(x) == INTERN) mark(car(x));
+
+    while (1)
+    {
+        if (getCDRType(x) != PTR_CELL && getCARType(x) != INTERN) break;
+        x = cdr(x);
+        if (!x) break;
+        if (x==Nil) break;
+        if (getMark(x)) break;
+        setMark(x, MARKER);
+        if (getCARType(x) == PTR_CELL || getCARType(x) == INTERN) mark(car(x));
+    }
+    //if (getCDRType(x) == PTR_CELL || getCARType(x) == INTERN) mark(cdr(x));
 }
 
-int FIRST_DUMP=1;
-void dumpMem()
+void dump(FILE *fp, any p)
 {
+
+    if (getCARType(p) == TXT)
+    {
+        fprintf(fp, "%p %s(TXT = %p) %p %p\n", p, &(p->car),p->car, p->cdr, p->type._t);
+    }
+    else
+    {
+        fprintf(fp, "%p ", p);
+        if(p->car) fprintf(fp, "%p ", p->car); else fprintf(fp, "0 ");
+        if(p->cdr) fprintf(fp, "%p ", p->cdr); else fprintf(fp, "0 ");
+        if(p->type._t) fprintf(fp, "%p\n", p->type._t); else fprintf(fp, "0\n");
+        //fprintf(fp, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
+    }
+}
+
+void sweep()
+{
+   any p;
+   heap *h;
+   int i, c =100;
+   /* Sweep */
+   //Avail = NULL;
+   h = Heaps;
+   if (c) {
+      do {
+         p = h->cells + CELLS-1;
+         do
+         {
+            if (!getMark(p))
+            {
+                printf("FREEING %p  .... \n", p);
+               //Free(p);
+               --c;
+            }
+            //setMark(p, 0);
+         }
+         while (--p >= h->cells);
+      } while (h = h->next);
+
+      //while (c >= 0)
+      //{
+      //   heapAlloc(),  c -= CELLS;
+      //}
+   }
+}
+
+any doDump(any ignore)
+{
+    return ignore;
+
+    static int COUNT=0;
+    char debugFileName[100];
+    sprintf(debugFileName, "debug-%03d.mem", COUNT++);
+    int FIRST_DUMP=0;
+    if (T == cadr(ignore))
+    {
+        FIRST_DUMP=1;
+    }
+
     FILE *mem;
-    if (FIRST_DUMP) mem = fopen("debug.mem", "w");
-    else mem = fopen("debug.mem", "a+");
+    mem = fopen(debugFileName, "w");
     FIRST_DUMP=0;
 
     fprintf(mem, "# START MEM\n");
     for (int i = 0; i < MEMS; i += 3)
     {
-        fprintf(mem, "0x%016lx %p %p %p\n", &Mem[i], Mem[i], Mem[i + 1], Mem[i + 2]);
+        //fprintf(mem, "0x%016lx %p %p %p\n", &Mem[i], Mem[i], Mem[i + 1], Mem[i + 2]);
+        dump(mem, (any)(&Mem[i]));
     }
 
     heap *h = Heaps;
@@ -1864,17 +1947,65 @@ void dumpMem()
 
     do
     {
-        fprintf(mem, "# START HEAPS\n");
+        fprintf(mem, "# START HEAP\n");
         p = h->cells + CELLS-1;
         do
         {
-            fprintf(mem, "# START HEAP\n");
-            fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
+            //fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
+            dump(mem, p);
         }
         while (--p >= h->cells);
     } while (h = h->next);
 
     fclose(mem);
+
+    markAll();
+    //sweep();
+
+    return Nil;
+}
+
+void markAll()
+{
+   any p;
+   int i;
+
+MARKER = 1;
+   for (i = 0; i < MEMS; i += 3)
+   {
+       mark(&Mem[i]);
+   }
+
+MARKER = 2;
+   /* Mark */
+   mark(Intern[0]);
+MARKER = 3;
+   mark(Transient[0]);
+MARKER = 4;
+   mark(ApplyArgs);
+MARKER = 5;
+   mark(ApplyBody);
+MARKER = 6;
+   for (p = Env.stack; p; p = cdr(p))
+   {
+      mark(car(p));
+   }
+MARKER = 7;
+   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
+   {
+      for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
+      {
+         mark(((bindFrame*)p)->bnd[i].sym);
+         mark(((bindFrame*)p)->bnd[i].val);
+      }
+   }
+MARKER = 8;
+   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
+       printf("Marking catch frames\n");
+      if (((catchFrame*)p)->tag)
+         mark(((catchFrame*)p)->tag);
+      mark(((catchFrame*)p)->fin);
+   }
 }
 
 /* Garbage collector */
@@ -1884,40 +2015,54 @@ static void gc(long long c) {
    int i;
 
 
-   write(2, "GC CALLED\n", 10);
-   dumpMem();
-   //printf("GC CALLED %p\n", Env.stack->cdr->car);
-heapAlloc();
-return;
+   printf("GC CALLED\n");
+   doDump(Nil);
 
 
-   for (int i = 0; i < MEMS; i += 3)
-   {
-       mark(&Mem[i]);
-   }
+// MARKER = 1;
+//    for (int i = 0; i < MEMS; i += 3)
+//    {
+//        mark(&Mem[i]);
+//    }
+// 
+// MARKER = 2;
+//    /* Mark */
+//    mark(Intern[0]);
+// MARKER = 3;
+//    mark(Transient[0]);
+// MARKER = 4;
+//    mark(ApplyArgs);
+// MARKER = 5;
+//    mark(ApplyBody);
+// MARKER = 6;
+//    for (p = Env.stack; p; p = cdr(p))
+//    {
+//       mark(car(p));
+//    }
+// MARKER = 7;
+//    for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
+//    {
+//       for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
+//       {
+//          mark(((bindFrame*)p)->bnd[i].sym);
+//          mark(((bindFrame*)p)->bnd[i].val);
+//       }
+//    }
+// MARKER = 8;
+//    for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
+//        printf("Marking catch frames\n");
+//       if (((catchFrame*)p)->tag)
+//          mark(((catchFrame*)p)->tag);
+//       mark(((catchFrame*)p)->fin);
+//    }
 
-   /* Mark */
-   mark(Intern[0]),  mark(Intern[1]);
-   mark(Transient[0]), mark(Transient[1]);
-   mark(ApplyArgs),  mark(ApplyBody);
-   for (p = Env.stack; p; p = cdr(p))
-   {
-      mark(car(p));
-   }
-   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
-   {
-      for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
-      {
-         mark(((bindFrame*)p)->bnd[i].sym);
-         mark(((bindFrame*)p)->bnd[i].val);
-      }
-   }
-   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-       printf("Marking catch frames\n");
-      if (((catchFrame*)p)->tag)
-         mark(((catchFrame*)p)->tag);
-      mark(((catchFrame*)p)->fin);
-   }
+   markAll();
+   doDump(Nil);
+
+   heapAlloc();
+   return;
+
+
 
    /* Sweep */
    Avail = NULL;
@@ -1929,7 +2074,8 @@ return;
          {
             if (!getMark(p))
             {
-               Free(p);
+                printf("Freeing %p\n", p);
+                Free(p);
                --c;
             }
             setMark(p, 0);
@@ -1937,11 +2083,26 @@ return;
          while (--p >= h->cells);
       } while (h = h->next);
 
+
+      //printf("C = %lld\n", c);
+
       while (c >= 0)
       {
          heapAlloc(),  c -= CELLS;
       }
    }
+
+//heapAlloc();
+   return;
+}
+
+any consIntern(any x, any y) {
+    any r = cons(x, y);
+
+   setCARType(r, INTERN);
+   setCDRType(r, INTERN);
+
+   return r;
 }
 
 /* Construct a cell */
@@ -2371,6 +2532,8 @@ int main(int ac, char *av[])
    av++;
    AV = av;
    heapAlloc();
+   doDump(Nil);
+   //CELLS = 1;
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
    Mem[4] = (any)Mem; // TODO - SETTING THE VALUE OF NIL
@@ -2411,6 +2574,7 @@ int main(int ac, char *av[])
    ApplyArgs = cons(cons(consSym(Nil, 0), Nil), Nil);
    ApplyBody = cons(Nil, Nil);
 
+   doDump(Nil);
    loadAll(NULL);
    while (!feof(stdin))
       load(NULL, ':', Nil);
