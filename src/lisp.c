@@ -2208,7 +2208,8 @@ any consSym(any val, word w) {
    Avail = p->car;
    p->cdr = val ? val : p;
    p->car = (any)w;
-   p->type.parts[0] = TXT;
+   setCARType(p, TXT);
+   setCDRType(p, PTR_CELL);
    return p;
 }
 
@@ -2224,6 +2225,8 @@ any consName(word w, any n) {
    p = symPtr(p);
    p->car = (any)w;
    p->cdr = n;
+   setCARType(p, TXT);
+   setCDRType(p, PTR_CELL);
    return p;
 }
 ///////////////////////////////////////////////
