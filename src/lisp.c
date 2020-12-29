@@ -93,37 +93,48 @@ int getMark(any cell)
 #include "def.d"
 #include "mem.d"
 
-typedef struct heap {
+typedef struct heap
+{
    cell cells[CELLS];
    struct heap *next;
-} heap;
+}
+heap;
 
-typedef struct bindFrame {
+typedef struct bindFrame
+{
    struct bindFrame *link;
    int i, cnt;
    struct {any sym; any val;} bnd[1];
-} bindFrame;
+}
+bindFrame;
 
-typedef struct inFrame {
+typedef struct inFrame
+{
    struct inFrame *link;
    void (*get)(void);
    FILE *fp;
    int next;
-} inFrame;
+}
+inFrame;
 
-typedef struct outFrame {
+typedef struct outFrame
+{
    struct outFrame *link;
    void (*put)(int);
    FILE *fp;
-} outFrame;
+}
+outFrame;
 
-typedef struct parseFrame {
+typedef struct parseFrame
+{
    int i;
    word w;
    any sym, nm;
-} parseFrame;
+}
+parseFrame;
 
-typedef struct stkEnv {
+typedef struct stkEnv
+{
    cell *stack, *arg;
    bindFrame *bind;
    int next;
@@ -134,19 +145,24 @@ typedef struct stkEnv {
    void (*get)(void);
    void (*put)(int);
    bool brk;
-} stkEnv;
+}
+stkEnv;
 
-typedef struct catchFrame {
+typedef struct catchFrame
+{
    struct catchFrame *link;
    any tag, fin;
    stkEnv env;
    jmp_buf rst;
-} catchFrame;
+}
+catchFrame;
 
-
-typedef struct {
+typedef struct
+{
         any sym; any val;
-} bindFrameBind;
+}
+bindFrameBind;
+
 #define bindFrameSize (sizeof(bindFrame))
 #define bindSize (sizeof(bindFrameBind))
 static inline bindFrame *allocFrame(int l)
@@ -156,30 +172,19 @@ static inline bindFrame *allocFrame(int l)
     return (bindFrame*)malloc(s1 + s2);
 };
 
-
 /*** Macros ***/
 #define Free(p)         ((p)->car=Avail, (p)->cdr=0, (p)->type._t=0,  Avail=(p))
 
 /* Number access */
-#define num(x)          ((long long)(x))
+#define num(x)          ((word)(x))
 #define txt(n)          ((any)(num(n)<<1|1))
 #define box(n)          ((any)(num(n)<<2|2))
-//#define unBox(n)        (num(n)>>2)
 #define unBox(n)        (num(n->car))
-//#define Zero            ((any)2)
-#define One             ((any)6)
 
 /* Symbol access */
-//#define symPtr(x)       ((any)&(x)->cdr)
 #define symPtr(x)       (x)
-//#define val(x)          ((x)->car)
 #define val(x)          ((x)->cdr)
 
-
-any tail1(any x)
-{
-   return (((x)-1)->cdr);
-}
 #define tail(x)         (x)
 
 /* Cell access */
@@ -203,8 +208,6 @@ any tail1(any x)
 #define data(c)         ((c).car)
 #define Save(c)         ((c).cdr=Env.stack, Env.stack=&(c))
 #define drop(c)         (Env.stack=(c).cdr)
-//#define Push(c,x)       (data(c)=(x),setCARType(&(c), PTR_CELL), setCDRType(&(c), UNDEFINED), printf("PUSH at %x %d\n", Chr, __LINE__), Save(c))
-//#define Push(c,x)       (data(c)=(x), printf("PUSH at %x %d\n", Chr, __LINE__), Save(c))
 #define Push(c,x)       (data(c)=(x), Save(c))
 #define Pop(c)          (drop(c), data(c))
 
@@ -213,33 +216,25 @@ any tail1(any x)
 
 /* Predicates */
 #define isNil(x)        ((x)==Nil)
-// isTxt should just check if car is txt
-//#define isTxt(x)        (num(x)&1)
 #define isTxt(x)        (((any)(x))->type.parts[0] == TXT)
-//#define isNum(x)        (num(x)&2)
 #define isNum(x)        (((any)(x))->type.parts[0] == NUM)
-//#define isSym(x)        (num(x)&WORD)
+#define isCell(x)        (((any)(x))->type.parts[0] == PTR_CELL)
+#define isFunc(x)        (((any)(x))->type.parts[1] == FUNC)
 bool isSym(any x)
 {
    if (x) return 0;
    // TODO - this must be checked out
    return 0;
 }
-#define isSymb(x)       ((num(x)&(WORD+2))==WORD)
-//#define isCell(x)       (!(num(x)&(2*WORD-1)))
-#define isCell(x)        (((any)(x))->type.parts[0] == PTR_CELL)
-#define isFunc(x)        (((any)(x))->type.parts[1] == FUNC)
 
-/* Evaluation */
+
 any evList(any);
-/* Evaluation */
 any EVAL(any x)
 {
    if (isNum(x))
    {
       return x;
    }
-   //else if (isSym(x))
    else if (isTxt(x))
    {
       return val(x);
@@ -249,17 +244,16 @@ any EVAL(any x)
       return evList(x);
    }
 }
+
 #define evSubr(f,x)     (*(FunPtr)(num(f)))(x)
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
 #define NeedSym(ex,x)   if (!isSym(x)) symError(ex,x)
-#define NeedSymb(ex,x)  if (!isSymb(x)) symError(ex,x)
 #define NeedPair(ex,x)  if (!isCell(x)) pairError(ex,x)
 #define NeedAtom(ex,x)  if (isCell(x)) atomError(ex,x)
 #define NeedLst(ex,x)   if (!isCell(x) && !isNil(x)) lstError(ex,x)
 #define NeedVar(ex,x)   if (isNum(x)) varError(ex,x)
-//#define CheckVar(ex,x)  if ((x)>(any)Rom && (x)<=Quote) protError(ex,x)
 
 /* Globals */
 extern int Chr, Trace;
@@ -272,8 +266,6 @@ extern FILE *InFile, *OutFile;
 extern any TheKey, TheCls, Thrown;
 extern any Intern[2], Transient[2];
 extern any ApplyArgs, ApplyBody;
-extern any const Rom[];
-extern any Ram[];
 
 static void gc(long long c);
 word getHeapSize();
@@ -357,37 +349,43 @@ long long xNum(any,any);
 any xSym(any);
 
 /* List length calculation */
-static inline int length(any x) {
-   int n;
+static inline word length(any x)
+{
+   word n;
 
-   //for (n = 0; isCell(x); x = cdr(x))
-   for (n = 0; x != Nil; x = cdr(x))
-      ++n;
+   for (n = 0; x != Nil; x = cdr(x)) ++n;
    return n;
 }
 
 /* List interpreter */
-static inline any prog(any x) {
+static inline any prog(any x)
+{
    any y;
 
    do
+   {
       y = EVAL(car(x));
+   }
    while (Nil != (x = cdr(x)));
-   //while (isCell(x = cdr(x)));
+
    return y;
 }
 
-static inline any run(any x) {
+static inline any run(any x)
+{
    any y;
    cell at;
 
    Push(at,val(At));
    do
+   {
       y = EVAL(car(x));
+   }
    while (isCell(x = cdr(x)));
    val(At) = Pop(at);
    return y;
 }
+
 /* Globals */
 int Chr, Trace;
 char **AV, *AV0, *Home;
@@ -398,13 +396,6 @@ catchFrame *CatchPtr;
 FILE *InFile, *OutFile;
 any Intern[2], Transient[2];
 any ApplyArgs, ApplyBody;
-
-//////////////////////////////////////////////////////////// TODO THIS SHOULD BE REMOVED
-/* ROM Data */
-any const Rom[] = { (any)0 };
-
-/* RAM Symbols */
-any Ram[] = { (any)0 };
 
 ///////////////////////////////////////////////
 //               sym.c
@@ -712,15 +703,10 @@ any mkStr(char *s)
 }
 
 // (==== ['sym ..]) -> NIL
-any doHide(any ex) {
-   any x, y;
+any doHide(any ex)
+{
+    // TODO - is this needed?
 
-   Transient[0] = Transient[1] = Nil;
-   for (x = cdr(ex); x != Nil; x = cdr(x)) {
-      y = EVAL(car(x));
-      NeedSymb(ex,y);
-      intern(y, Transient);
-   }
    return Nil;
 }
 
@@ -1307,12 +1293,8 @@ any load(any ex, int pr, any x) {
    cell c1, c2;
    inFrame f;
 
-   if (isSymb(x) && firstByte(x) == '-') {
-      Push(c1, parse(x,YES));
-      x = evList(data(c1));
-      drop(c1);
-      return x;
-   }
+   // TODO - get back function execution from command line if (isSymb(x) && firstByte(x) == '-')
+
    rdOpen(ex, x, &f);
    pushInFiles(&f);
    doHide(Nil);
@@ -1908,6 +1890,50 @@ void dumpHeaps(FILE *mem, heap *h)
     while (--p >= h->cells);
 }
 
+void markAll(void);
+void markAll()
+{
+   any p;
+   int i;
+
+MARKER = 1;
+   for (i = 0; i < MEMS; i += 3)
+   {
+       mark(&Mem[i]);
+   }
+
+MARKER = 2;
+   /* Mark */
+   mark(Intern[0]);
+MARKER = 3;
+   mark(Transient[0]);
+MARKER = 4;
+   mark(ApplyArgs);
+MARKER = 5;
+   mark(ApplyBody);
+MARKER = 6;
+   for (p = Env.stack; p; p = cdr(p))
+   {
+      mark(car(p));
+   }
+MARKER = 7;
+   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
+   {
+      for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
+      {
+         mark(((bindFrame*)p)->bnd[i].sym);
+         mark(((bindFrame*)p)->bnd[i].val);
+      }
+   }
+MARKER = 8;
+   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
+       printf("Marking catch frames\n");
+      if (((catchFrame*)p)->tag)
+         mark(((catchFrame*)p)->tag);
+      mark(((catchFrame*)p)->fin);
+   }
+}
+
 any doDump(any ignore)
 {
     return ignore;
@@ -1961,48 +1987,6 @@ any doDump(any ignore)
     return Nil;
 }
 
-void markAll()
-{
-   any p;
-   int i;
-
-MARKER = 1;
-   for (i = 0; i < MEMS; i += 3)
-   {
-       mark(&Mem[i]);
-   }
-
-MARKER = 2;
-   /* Mark */
-   mark(Intern[0]);
-MARKER = 3;
-   mark(Transient[0]);
-MARKER = 4;
-   mark(ApplyArgs);
-MARKER = 5;
-   mark(ApplyBody);
-MARKER = 6;
-   for (p = Env.stack; p; p = cdr(p))
-   {
-      mark(car(p));
-   }
-MARKER = 7;
-   for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
-   {
-      for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
-      {
-         mark(((bindFrame*)p)->bnd[i].sym);
-         mark(((bindFrame*)p)->bnd[i].val);
-      }
-   }
-MARKER = 8;
-   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-       printf("Marking catch frames\n");
-      if (((catchFrame*)p)->tag)
-         mark(((catchFrame*)p)->tag);
-      mark(((catchFrame*)p)->fin);
-   }
-}
 
 word getHeapSize()
 {
