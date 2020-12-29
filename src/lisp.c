@@ -1448,58 +1448,43 @@ any load(any ex, int pr, any x)
 }
 
 /*** Prining ***/
-void putStdout(int c) {putc(c, OutFile);}
-
-void newline(void) {Env.put('\n');}
-void space(void) {Env.put(' ');}
-
-void outString(char *s) {
-   while (*s)
-      Env.put(*s++);
+void putStdout(int c)
+{
+    putc(c, OutFile);
 }
 
-int bufNum(char buf[BITS/2], long long n) {
-   return sprintf(buf, "%ld", n);
+void newline(void)
+{
+    Env.put('\n');
 }
 
-void outNum(long long n) {
-   char buf[BITS/2];
-
-   bufNum(buf, n);
-   outString(buf);
+void space(void)
+{
+    Env.put(' ');
 }
 
-void prIntern(any nm) {
-   int i, c;
-   uword w;
-
-   c = getByte1(&i, &w, &nm);
-   if (strchr(Delim, c))
-      Env.put('\\');
-   Env.put(c);
-   while (c = getByte(&i, &w, &nm)) {
-      if (c == '\\' || strchr(Delim, c))
-         Env.put('\\');
-      Env.put(c);
-   }
+void outString(char *s)
+{
+    while (*s)
+        Env.put(*s++);
 }
 
-void prTransient(any nm) {
-   int i, c;
-   uword w;
+int bufNum(char buf[BITS/2], long long n)
+{
+    return sprintf(buf, "%ld", n);
+}
 
-   Env.put('"');
-   c = getByte1(&i, &w, &nm);
-   do {
-      if (c == '"'  ||  c == '\\')
-         Env.put('\\');
-      Env.put(c);
-   } while (c = getByte(&i, &w, &nm));
-   Env.put('"');
+void outNum(word n)
+{
+    char buf[BITS/2];
+
+    bufNum(buf, n);
+    outString(buf);
 }
 
 /* Print one expression */
-void print(any x) {
+void print(any x)
+{
    if (x == T)
    {
       printf("T");
@@ -1521,52 +1506,64 @@ void print(any x) {
    return;
 }
 
-void prin(any x) {
+void prin(any x)
+{
     if (x == Nil)
     {
-         printf("T");
-         return;
+        printf("T");
+        return;
     }
 
-   if (!isNil(x)) {
-      if (isNum(x))
-         outNum(unBox(x));
-      else if (x==T) {
-         printf("T");
-      }
-      else if (isSym(x)) {
-         int i, c;
-         uword w;
+    if (!isNil(x))
+    {
+        if (isNum(x))
+        {
+            outNum(unBox(x));
+        }
+        else if (x == T)
+        {
+            printf("T");
+        }
+        else if (isSym(x))
+        {
+            int i, c;
+            uword w;
 
-         for (x = name(x), c = getByte1(&i, &w, &x); c; c = getByte(&i, &w, &x)) {
-            if (c != '^')
-               Env.put(c);
-            else if (!(c = getByte(&i, &w, &x)))
-               Env.put('^');
-            else if (c == '?')
-               Env.put(127);
-            else
-               Env.put(c &= 0x1F);
-         }
-      }
-      else {
-         while (prin(car(x)), !isNil(x = cdr(x))) {
-            if (!isCell(x)) {
-               prin(x);
-               break;
+            for (x = name(x), c = getByte1(&i, &w, &x); c; c = getByte(&i, &w, &x))
+            {
+                if (c != '^')
+                    Env.put(c);
+                else if (!(c = getByte(&i, &w, &x)))
+                    Env.put('^');
+                else if (c == '?')
+                    Env.put(127);
+                else
+                    Env.put(c &= 0x1F);
             }
-         }
-      }
-   }
+        }
+        else
+        {
+            while (prin(car(x)), !isNil(x = cdr(x)))
+            {
+                if (!isCell(x))
+                {
+                    prin(x);
+                    break;
+                }
+            }
+        }
+    }
 }
 
 // (prin 'any ..) -> any
-any doPrin(any x) {
+any doPrin(any x)
+{
    any y = Nil;
 
-   //while (isCell(x = cdr(x)))
    while (Nil != (x = cdr(x)))
+   {
       prin(y = EVAL(car(x)));
+   }
    newline();
    return y;
 }
@@ -1582,131 +1579,149 @@ any doPrin(any x) {
 
 
 /* Make number from symbol */
-any symToNum(any sym, int scl, int sep, int ign) {
-   unsigned c;
-   int i;
-   uword w;
-   bool sign, frac;
-   long long n;
-   any s = sym->car;
+any symToNum(any sym, int scl, int sep, int ign)
+{
+    unsigned c;
+    int i;
+    uword w;
+    bool sign, frac;
+    long long n;
+    any s = sym->car;
 
 
-   if (!(c = getByte1(&i, &w, &s)))
-      return NULL;
-   while (c <= ' ')  /* Skip white space */
-      if (!(c = getByte(&i, &w, &s)))
-         return NULL;
-   sign = NO;
-   if (c == '+'  ||  c == '-' && (sign = YES))
-      if (!(c = getByte(&i, &w, &s)))
-         return NULL;
-   if ((c -= '0') > 9)
-      return NULL;
-   frac = NO;
-   n = c;
-   while ((c = getByte(&i, &w, &s))  &&  (!frac || scl)) {
-      if ((int)c == sep) {
-         if (frac)
+    if (!(c = getByte1(&i, &w, &s)))
+        return NULL;
+
+    while (c <= ' ')  /* Skip white space */
+    {
+        if (!(c = getByte(&i, &w, &s)))
             return NULL;
-         frac = YES;
-      }
-      else if ((int)c != ign) {
-         if ((c -= '0') > 9)
+    }
+
+    sign = NO;
+    if (c == '+'  ||  c == '-' && (sign = YES))
+    {
+        if (!(c = getByte(&i, &w, &s)))
             return NULL;
-         n = n * 10 + c;
-         if (frac)
-            --scl;
-      }
-   }
-   if (c) {
-      if ((c -= '0') > 9)
-         return NULL;
-      if (c >= 5)
-         n += 1;
-      while (c = getByte(&i, &w, &s)) {
-         if ((c -= '0') > 9)
+    }
+
+    if ((c -= '0') > 9)
+        return NULL;
+
+    frac = NO;
+    n = c;
+    while ((c = getByte(&i, &w, &s))  &&  (!frac || scl))
+    {
+        if ((int)c == sep)
+        {
+            if (frac)
+                return NULL;
+            frac = YES;
+        }
+        else if ((int)c != ign)
+        {
+            if ((c -= '0') > 9)
+                return NULL;
+            n = n * 10 + c;
+            if (frac)
+                --scl;
+        }
+    }
+    if (c)
+    {
+        if ((c -= '0') > 9)
             return NULL;
-      }
-   }
-   if (frac)
-      while (--scl >= 0)
-         n *= 10;
-   //return box(sign? -n : n);
+        if (c >= 5)
+            n += 1;
+        while (c = getByte(&i, &w, &s))
+        {
+            if ((c -= '0') > 9)
+                return NULL;
+        }
+    }
+    if (frac)
+        while (--scl >= 0)
+            n *= 10;
 
 
-   any r = cons(Nil, Nil);
-   //any r = cons(n, Nil);
-   r->car = n;
-   r->type.parts[0] = NUM;
-   
-   return r;
+    any r = cons(Nil, Nil);
+    r->car = n;
+    r->type.parts[0] = NUM;
+
+    return r;
 }
 
 // (+ 'num ..) -> num
-any doAdd(any ex) {
-   any x, y;
-   uword n=0;
+any doAdd(any ex)
+{
+    any x, y;
+    uword n=0;
 
-   x = cdr(ex);
-   if (isNil(y = EVAL(car(x))))
-      return Nil;
-   NeedNum(ex,y);
-   n = unBox(y);
-   while (Nil != (x = cdr(x))) {
-      if (isNil(y = EVAL(car(x))))
-         return Nil;
-      NeedNum(ex,y);
-      n += unBox(y);
-   }
+    x = cdr(ex);
+    if (isNil(y = EVAL(car(x))))
+        return Nil;
+    NeedNum(ex,y);
+    n = unBox(y);
+    while (Nil != (x = cdr(x)))
+    {
+        if (isNil(y = EVAL(car(x))))
+            return Nil;
+        NeedNum(ex,y);
+        n += unBox(y);
+    }
 
-   any r = cons(Nil, Nil);
-   r->car = n;
-   r->type.parts[0] = NUM;
-   return r;
+    any r = cons(Nil, Nil);
+    r->car = n;
+    r->type.parts[0] = NUM;
+    return r;
 }
 
-any doSub(any ex) {
-   any x, y;
-   uword n=0;
+any doSub(any ex)
+{
+    any x, y;
+    uword n=0;
 
-   x = cdr(ex);
-   if (isNil(y = EVAL(car(x))))
-      return Nil;
-   NeedNum(ex,y);
-   n = unBox(y);
-   while (Nil != (x = cdr(x))) {
-      if (isNil(y = EVAL(car(x))))
-         return Nil;
-      NeedNum(ex,y);
-      n -= unBox(y);
-   }
+    x = cdr(ex);
+    if (isNil(y = EVAL(car(x))))
+        return Nil;
+    NeedNum(ex,y);
+    n = unBox(y);
+    while (Nil != (x = cdr(x)))
+    {
+        if (isNil(y = EVAL(car(x))))
+            return Nil;
+        NeedNum(ex,y);
+        n -= unBox(y);
+    }
 
-   any r = cons(Nil, Nil);
-   r->car = n;
-   r->type.parts[0] = NUM;
-   return r;
+    any r = cons(Nil, Nil);
+    r->car = n;
+    r->type.parts[0] = NUM;
+    return r;
 }
 
-any doMul(any ex) {
-   any x, y;
-   uword n=0;
+any doMul(any ex)
+{
+    any x, y;
+    uword n=0;
 
-   x = cdr(ex);
-   if (isNil(y = EVAL(car(x))))
-      return Nil;
-   NeedNum(ex,y);
-   n = unBox(y);
-   while (Nil != (x = cdr(x))) {
-      if (isNil(y = EVAL(car(x))))
-         return Nil;
-      NeedNum(ex,y);
-      n *= unBox(y);
-   }
+    x = cdr(ex);
+    if (isNil(y = EVAL(car(x))))
+        return Nil;
+    NeedNum(ex,y);
+    n = unBox(y);
+    while (Nil != (x = cdr(x)))
+    {
+        if (isNil(y = EVAL(car(x))))
+            return Nil;
+        NeedNum(ex,y);
+        n *= unBox(y);
+    }
 
-   any r = cons(Nil, Nil);
-   r->car = n;
-   r->type.parts[0] = NUM;
-   return r;
+    any r = cons(Nil, Nil);
+    r->car = n;
+    r->type.parts[0] = NUM;
+    return r;
 }
 
 ///////////////////////////////////////////////
@@ -1718,7 +1733,8 @@ any doMul(any ex) {
 //               flow.c START
 ///////////////////////////////////////////////
 
-static void redefMsg(any x, any y) {
+static void redefMsg(any x, any y)
+{
    FILE *oSave = OutFile;
 
    OutFile = stderr;
@@ -1730,7 +1746,8 @@ static void redefMsg(any x, any y) {
    OutFile = oSave;
 }
 
-static void redefine(any ex, any s, any x) {
+static void redefine(any ex, any s, any x)
+{
    //NeedSymb(ex,s); TODO - GOTTA KNOW WHAT"S GOING ON HERE
    //CheckVar(ex,s);
 
@@ -1749,25 +1766,33 @@ static void redefine(any ex, any s, any x) {
 }
 
 // (quote . any) -> any
-any doQuote(any x) {return cdr(x);}
+any doQuote(any x)
+{
+    return cdr(x);
+}
 
 // (== 'any ..) -> flg
-any doEq(any x) {
+any doEq(any x)
+{
    cell c1;
 
    x = cdr(x),  Push(c1, EVAL(car(x)));
    while (Nil != (x = cdr(x)))
+   {
       //if (data(c1) != EVAL(car(x))) { // TODO CHECK IT OUT
-      if (car(data(c1)) != car(EVAL(car(x)))) {
+      if (car(data(c1)) != car(EVAL(car(x))))
+      {
          drop(c1);
          return Nil;
       }
+   }
    drop(c1);
    return T;
 }
 
 // (if 'any1 any2 . prg) -> any
-any doIf(any x) {
+any doIf(any x)
+{
    any a;
 
    x = cdr(x);
@@ -1779,14 +1804,10 @@ any doIf(any x) {
 }
 
 // (de sym . any) -> sym
-any doDe(any ex) {
+any doDe(any ex)
+{
    redefine(ex, cadr(ex), cddr(ex));
    return cadr(ex);
-}
-
-// (meth 'obj ..) -> any
-any doMeth(any ex) {
-    return ex;
 }
 
 
@@ -1801,93 +1822,105 @@ any doMeth(any ex) {
  * and restored after the let binding
  *
  */
-any doLet(any x) {
-   any y;
+any doLet(any x)
+{
+    any y;
 
-   x = cdr(x);
-   if (!isCell(y = car(x))) {
-      bindFrame f;
+    x = cdr(x);
+    if (!isCell(y = car(x)))
+    {
+        bindFrame f;
 
-      x = cdr(x),  Bind(y,f),  val(y) = EVAL(car(x));
-      x = prog(cdr(x));
-      Unbind(f);
-   }
-   else {
-       // TODO check out how to do stack 
-       bindFrame *f = allocFrame((length(y)+1)/2);
+        x = cdr(x),  Bind(y,f),  val(y) = EVAL(car(x));
+        x = prog(cdr(x));
+        Unbind(f);
+    }
+    else
+    {
+        // TODO check out how to do stack 
+        bindFrame *f = allocFrame((length(y)+1)/2);
 
-      f->link = Env.bind,  Env.bind = f;
-      f->i = f->cnt = 0;
-      do {
-         f->bnd[f->cnt].sym = car(y);
-         f->bnd[f->cnt].val = val(car(y));
-         ++f->cnt;
-         val(car(y)) = EVAL(cadr(y));
-      } while (isCell(y = cddr(y)) && y != Nil);
-      x = prog(cdr(x));
-      while (--f->cnt >= 0)
-         val(f->bnd[f->cnt].sym) = f->bnd[f->cnt].val;
-      Env.bind = f->link;
+        f->link = Env.bind,  Env.bind = f;
+        f->i = f->cnt = 0;
+        do
+        {
+            f->bnd[f->cnt].sym = car(y);
+            f->bnd[f->cnt].val = val(car(y));
+            ++f->cnt;
+            val(car(y)) = EVAL(cadr(y));
+        }
+        while (isCell(y = cddr(y)) && y != Nil);
+        x = prog(cdr(x));
+        while (--f->cnt >= 0)
+            val(f->bnd[f->cnt].sym) = f->bnd[f->cnt].val;
+        Env.bind = f->link;
 
-      free(f);
-   }
-   return x;
+        free(f);
+    }
+    return x;
 }
 
 // (bye 'num|NIL)
-any doBye(any ex) {
+any doBye(any ex)
+{
    printf("\n");
    bye(0);
    return ex;
 }
 
 // (do 'flg|num ['any | (NIL 'any . prg) | (T 'any . prg) ..]) -> any
-any doDo(any x) {
-   any f, y, z, a;
-   uword N=-1;
+any doDo(any x)
+{
+    any f, y, z, a;
+    uword N=-1;
 
-   x = cdr(x);
-   if (isNil(f = EVAL(car(x))))
-      return Nil;
-   if (isNum(f) && num(f) < 0)
-      return Nil;
-   else
-      N = f->car;
+    x = cdr(x);
+    if (isNil(f = EVAL(car(x))))
+        return Nil;
+    if (isNum(f) && num(f) < 0)
+        return Nil;
+    else
+        N = f->car;
 
-   x = cdr(x),  z = Nil;
-   for (;;) {
-      if (N >= 0) {
-         //if (f == Zero)
-         if (N == 0)
-            return z;
-         N--;
-      }
-      y = x;
-      do {
-         if (!isNum(z = car(y))) {
-            if (isSym(z))
-               z = val(z);
-            else if (isNil(car(z))) {
-               z = cdr(z);
-               if (isNil(a = EVAL(car(z))))
-                  return prog(cdr(z));
-               val(At) = a;
-               z = Nil;
+    x = cdr(x),  z = Nil;
+    for (;;)
+    {
+        if (N >= 0)
+        {
+            if (N == 0)
+                return z;
+            N--;
+        }
+        y = x;
+        do
+        {
+            if (!isNum(z = car(y)))
+            {
+                if (isSym(z))
+                    z = val(z);
+                else if (isNil(car(z)))
+                {
+                    z = cdr(z);
+                    if (isNil(a = EVAL(car(z))))
+                        return prog(cdr(z));
+                    val(At) = a;
+                    z = Nil;
+                }
+                else if (car(z) == T)
+                {
+                    z = cdr(z);
+                    if (!isNil(a = EVAL(car(z))))
+                    {
+                        val(At) = a;
+                        return prog(cdr(z));
+                    }
+                    z = Nil;
+                }
+                else
+                    z = evList(z);
             }
-            else if (car(z) == T) {
-               z = cdr(z);
-               if (!isNil(a = EVAL(car(z)))) {
-                  val(At) = a;
-                  return prog(cdr(z));
-               }
-               z = Nil;
-            }
-            else
-               z = evList(z);
-         }
-      //} while (isCell(y = cdr(y)));
-      } while (Nil != (y = cdr(y)));
-   }
+        } while (Nil != (y = cdr(y)));
+    }
 }
 
 ///////////////////////////////////////////////
@@ -1904,7 +1937,8 @@ static void mark(any);
 
 int MARKER = 0;
 
-static void mark(any x) {
+static void mark(any x)
+{
     if (!x) return;
 
     if (getMark(x)) return;
@@ -1925,7 +1959,6 @@ static void mark(any x) {
         setMark(x, MARKER);
         if (getCARType(x) == PTR_CELL || getCARType(x) == INTERN) mark(car(x));
     }
-    //if (getCDRType(x) == PTR_CELL || getCARType(x) == INTERN) mark(cdr(x));
 }
 
 void dump(FILE *fp, any p)
@@ -2098,7 +2131,8 @@ uword getHeapSize()
     uword size = 0;
     uword sizeFree = 0;
     heap *h = Heaps;
-    do {
+    do
+    {
         any p = h->cells + CELLS-1;
         do
         {
@@ -2120,156 +2154,112 @@ uword getHeapSize()
 }
 
 /* Garbage collector */
-static void gc(long long c) {
-   any p;
-   heap *h;
-   int i;
+static void gc(long long c)
+{
+    any p;
+    heap *h;
+    int i;
 
+    doDump(Nil);
+    markAll();
+    doDump(Nil);
 
-   //heapAlloc();
-   //return;
-
-   //printf("GC CALLED\n");
-   doDump(Nil);
-
-
-// MARKER = 1;
-//    for (int i = 0; i < MEMS; i += 3)
-//    {
-//        mark(&Mem[i]);
-//    }
-// 
-// MARKER = 2;
-//    /* Mark */
-//    mark(Intern[0]);
-// MARKER = 3;
-//    mark(Transient[0]);
-// MARKER = 4;
-//    mark(ApplyArgs);
-// MARKER = 5;
-//    mark(ApplyBody);
-// MARKER = 6;
-//    for (p = Env.stack; p; p = cdr(p))
-//    {
-//       mark(car(p));
-//    }
-// MARKER = 7;
-//    for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
-//    {
-//       for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
-//       {
-//          mark(((bindFrame*)p)->bnd[i].sym);
-//          mark(((bindFrame*)p)->bnd[i].val);
-//       }
-//    }
-// MARKER = 8;
-//    for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-//        printf("Marking catch frames\n");
-//       if (((catchFrame*)p)->tag)
-//          mark(((catchFrame*)p)->tag);
-//       mark(((catchFrame*)p)->fin);
-//    }
-
-   markAll();
-   doDump(Nil);
-
-
-
-
-   /* Sweep */
-   Avail = NULL;
-   h = Heaps;
-   if (c) {
-      do {
-         p = h->cells + CELLS-1;
-         do
-         {
-            if (!getMark(p))
+    /* Sweep */
+    Avail = NULL;
+    h = Heaps;
+    if (c)
+    {
+        do
+        {
+            p = h->cells + CELLS-1;
+            do
             {
-                //printf("Freeing %p\n", p);
-                Free(p);
-               --c;
+                if (!getMark(p))
+                {
+                    Free(p);
+                    --c;
+                }
+                setMark(p, 0);
             }
-            else
-            {
-                //printf("Keeping %p\n", p);
-            }
-            setMark(p, 0);
-         }
-         while (--p >= h->cells);
-      } while (h = h->next);
+            while (--p >= h->cells);
+        } while (h = h->next);
 
 
-      while (c >= 0)
-      {
-         heapAlloc(),  c -= CELLS;
-      }
-   }
+        while (c >= 0)
+        {
+            heapAlloc(),  c -= CELLS;
+        }
+    }
 
-   //printf("GC RETURNING AVAIL=%p\n", Avail);
-   doDump(Nil);
-   return;
+    doDump(Nil);
+    return;
 }
 
-any consIntern(any x, any y) {
+any consIntern(any x, any y)
+{
     any r = cons(x, y);
 
-   setCARType(r, INTERN);
-   setCDRType(r, INTERN);
+    setCARType(r, INTERN);
+    setCDRType(r, INTERN);
 
-   return r;
+    return r;
 }
 
 /* Construct a cell */
-any cons(any x, any y) {
-   cell *p;
+any cons(any x, any y)
+{
+    cell *p;
 
-   if (!(p = Avail)) {
-      cell c1, c2;
+    if (!(p = Avail))
+    {
+        cell c1, c2;
 
-      Push(c1,x);
-      Push(c2,y);
-      gc(CELLS);
-      drop(c1);
-      p = Avail;
-   }
-   Avail = p->car;
-   p->car = x;
-   p->cdr = y;
-   setCARType(p, PTR_CELL);
-   setCDRType(p, PTR_CELL);
-   return p;
+        Push(c1,x);
+        Push(c2,y);
+        gc(CELLS);
+        drop(c1);
+        p = Avail;
+    }
+    Avail = p->car;
+    p->car = x;
+    p->cdr = y;
+    setCARType(p, PTR_CELL);
+    setCDRType(p, PTR_CELL);
+    return p;
 }
 
 /* Construct a symbol */
-any consSym(any val, uword w) {
-   cell *p;
+any consSym(any val, uword w)
+{
+    cell *p;
 
-   if (!(p = Avail)) {
-      cell c1;
+    if (!(p = Avail)) {
+        cell c1;
 
-      if (!val)
-         gc(CELLS);
-      else {
-         Push(c1,val);
-         gc(CELLS);
-         drop(c1);
-      }
-      p = Avail;
-   }
-   Avail = p->car;
-   p->cdr = val ? val : p;
-   p->car = (any)w;
-   setCARType(p, TXT);
-   setCDRType(p, PTR_CELL);
-   return p;
+        if (!val)
+            gc(CELLS);
+        else {
+            Push(c1,val);
+            gc(CELLS);
+            drop(c1);
+        }
+        p = Avail;
+    }
+    Avail = p->car;
+    p->cdr = val ? val : p;
+    p->car = (any)w;
+    setCARType(p, TXT);
+    setCDRType(p, PTR_CELL);
+    return p;
 }
 
 /* Construct a name cell */
-any consName(uword w, any n) {
+any consName(uword w, any n)
+{
    cell *p;
 
-   if (!(p = Avail)) {
+   if (!(p = Avail))
+   {
       gc(CELLS);
       p = Avail;
    }
@@ -2285,28 +2275,29 @@ any consName(uword w, any n) {
 //               gc.c END
 ///////////////////////////////////////////////
 
-
-
 /*** System ***/
-void giveup(char *msg) {
-   fprintf(stderr, "%s\n", msg);
-   exit(1);
+void giveup(char *msg)
+{
+    fprintf(stderr, "%s\n", msg);
+    exit(1);
 }
 
-void bye(int n) {
-   exit(n);
+void bye(int n)
+{
+    exit(n);
 }
-
 
 /* Allocate memory */
-void *alloc(void *p, size_t siz) {
+void *alloc(void *p, size_t siz)
+{
    if (!(p = realloc(p,siz)))
       giveup("No memory");
    return p;
 }
 
 /* Allocate cell heap */
-void heapAlloc(void) {
+void heapAlloc(void)
+{
    heap *h;
    cell *p;
 
@@ -2314,18 +2305,20 @@ void heapAlloc(void) {
    h->next = Heaps,  Heaps = h;
    p = h->cells + CELLS-1;
    do
+   {
       Free(p);
+   }
    while (--p >= h->cells);
 }
 
 /*** Error handling ***/
-void err(any ex, any x, char *fmt, ...) {
-   printf("ERROR\n");
+void err(any ex, any x, char *fmt, ...)
+{
+    printf("ERROR\n");
     bye(0);
     if (ex == x) bye(1);
     if (fmt == NULL) bye(1);
 }
-
 
 void argError(any ex, any x) {err(ex, x, "Bad argument");}
 void numError(any ex, any x) {err(ex, x, "Number expected");}
@@ -2419,55 +2412,64 @@ any evExpr(any expr, any x)
 
 void undefined(any x, any ex) {err(ex, x, "Undefined");}
 
-static any evList2(any foo, any ex) {
-   cell c1;
+static any evList2(any foo, any ex)
+{
+    cell c1;
 
-   Push(c1, foo);
-   if (isCell(foo)) {
-      foo = evExpr(foo, cdr(ex));
-      drop(c1);
-      return foo;
-   }
-   for (;;) {
-      if (isNil(val(foo)))
-         undefined(foo,ex);
-      if (isNum(foo = val(foo))) {
-         foo = evSubr(foo,ex);
-         drop(c1);
-         return foo;
-      }
-      if (isCell(foo)) {
-         foo = evExpr(foo, cdr(ex));
-         drop(c1);
-         return foo;
-      }
-   }
+    Push(c1, foo);
+    if (isCell(foo))
+    {
+        foo = evExpr(foo, cdr(ex));
+        drop(c1);
+        return foo;
+    }
+    for (;;)
+    {
+        if (isNil(val(foo)))
+            undefined(foo,ex);
+        if (isNum(foo = val(foo)))
+        {
+            foo = evSubr(foo,ex);
+            drop(c1);
+            return foo;
+        }
+        if (isCell(foo))
+        {
+            foo = evExpr(foo, cdr(ex));
+            drop(c1);
+            return foo;
+        }
+    }
 }
 
 /* Evaluate a list */
-any evList(any ex) {
-   any foo;
+any evList(any ex)
+{
+    any foo;
 
-   if (isNum(foo = car(ex)))
-      return ex;
-   if (isCell(foo)) {
-      if (isNum(foo = evList(foo)))
-         return evSubr(foo,ex);
-      return evList2(foo,ex);
-   }
-   for (;;) {
-      if (isNil(val(foo)))
-         undefined(foo,ex);
-      if (isFunc(foo))
-         return evSubr(foo->cdr,ex);
-      if (isNum(foo = val(foo)))
-         return evSubr(foo,ex);
-      if (isCell(foo))
-         return evExpr(foo, cdr(ex));
-   }
+    if (isNum(foo = car(ex)))
+        return ex;
+    if (isCell(foo))
+    {
+        if (isNum(foo = evList(foo)))
+            return evSubr(foo,ex);
+        return evList2(foo,ex);
+    }
+    for (;;)
+    {
+        if (isNil(val(foo)))
+            undefined(foo,ex);
+        if (isFunc(foo))
+            return evSubr(foo->cdr,ex);
+        if (isNum(foo = val(foo)))
+            return evSubr(foo,ex);
+        if (isCell(foo))
+            return evExpr(foo, cdr(ex));
+    }
 }
 
-any loadAll(any ex) {
+any loadAll(any ex)
+{
    any x = Nil;
 
    while (*AV  &&  strcmp(*AV,"-") != 0)
@@ -2499,6 +2501,7 @@ void printNUM(any cell)
 {
     printf("%lld", (long long)cell->car);
 }
+
 void printCell(any cell)
 {
     if (cell == Nil)
@@ -2550,29 +2553,19 @@ int main(int ac, char *av[])
    Mem[4] = (any)Mem; // TODO - SETTING THE VALUE OF NIL
    Mem[7] = (any)(Mem+6); // TODO - SETTING THE VALUE OF NIL
 
-   //intern(Nil, Intern);
-   //isIntern(Nil, Intern);
    for (int i = 3; i < MEMS; i += 3) // 2 because Nil has already been interned
    {
       any cell = (any)&Mem[i];
       CellPartType carType = getCARType(cell);
       CellPartType cdrType = getCDRType(cell);
 
-      //printf("%d %d\n", GetCARType(cell), GetCDRType(cell));
       if (TXT == carType && cdrType != FUNC && cell->cdr)
       {
-         //printf("%d\n", i);
          intern(cell, Intern);
-         //printCell(cell);
-         //printCell(cell->cdr);
-         //printf("\n");
       }
       else if (TXT == carType && cdrType == FUNC && cell->cdr)
       {
-         //printf("%d\n", i);
          intern(cell, Intern);
-         //printCell(cell);
-         //printf(" CFUNC\n");
       }
       else if (TXT == carType)
       {
