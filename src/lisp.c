@@ -19,7 +19,6 @@ typedef unsigned long long word;
 typedef unsigned char byte;
 typedef unsigned char *ptr;
 
-#undef bool
 typedef enum {NO,YES} bool;
 
 typedef union
@@ -93,10 +92,6 @@ int getMark(any cell)
 }
 
 //////////////////////////////////////////////////////////
-// TODO this has to be fixed
-#define Quote (any)(Rom+7)
-any doQuote(any);
-
 #define ROMS 18
 #define RAMS 34
 //////////////////////////////////////////////////////////
@@ -270,7 +265,7 @@ any EVAL(any x)
 #define NeedAtom(ex,x)  if (isCell(x)) atomError(ex,x)
 #define NeedLst(ex,x)   if (!isCell(x) && !isNil(x)) lstError(ex,x)
 #define NeedVar(ex,x)   if (isNum(x)) varError(ex,x)
-#define CheckVar(ex,x)  if ((x)>(any)Rom && (x)<=Quote) protError(ex,x)
+//#define CheckVar(ex,x)  if ((x)>(any)Rom && (x)<=Quote) protError(ex,x)
 
 /* Globals */
 extern int Chr, Trace;
@@ -772,7 +767,7 @@ any doSetq(any ex) {
    do {
       y = car(x),  x = cdr(x);
       NeedVar(ex,y);
-      CheckVar(ex,y);
+      //CheckVar(ex,y);
       val(y) = EVAL(car(x));
    //} while (isCell(x = cdr(x)));
    } while (Nil != (x = cdr(x)));
@@ -1443,51 +1438,6 @@ void print(any x) {
    }
    printf ("TODO NOT A NUMBER %p %p\n", x, Nil);
    return;
-
-   if (isSym(x)) {
-      any nm = name(x);
-
-      if (nm == txt(0))
-         Env.put('$'),  outNum((word)x/sizeof(cell));
-      else if (x == isIntern(nm, Intern))
-         prIntern(nm);
-      else
-         prTransient(nm);
-   }
-   else if (car(x) == Quote  &&  x != cdr(x))
-      Env.put('\''),  print(cdr(x));
-   else {
-      any y;
-
-      Env.put('(');
-      if ((y = circ(x)) == NULL) {
-         while (print(car(x)), !isNil(x = cdr(x))) {
-            if (!isCell(x)) {
-               outString(" . ");
-               print(x);
-               break;
-            }
-            space();
-         }
-      }
-      else if (y == x) {
-         do
-            print(car(x)),  space();
-         while (y != (x = cdr(x)));
-         Env.put('.');
-      }
-      else {
-         do
-            print(car(x)),  space();
-         while (y != (x = cdr(x)));
-         outString(". (");
-         do
-            print(car(x)),  space();
-         while (y != (x = cdr(x)));
-         outString(".)");
-      }
-      Env.put(')');
-   }
 }
 
 void prin(any x) {
@@ -2283,39 +2233,6 @@ void heapAlloc(void) {
    while (--p >= h->cells);
 }
 
-/*** Primitives ***/
-any circ(any x) {
-   any y;
-
-   if (!isCell(x)  ||  x >= (any)Rom  &&  x < (any)(Rom+ROMS))
-      return NULL;
-   for (y = x;;) {
-      any z = cdr(y);
-
-      *(word*)&cdr(y) |= 1;
-      if (!isCell(y = z)) {
-         do
-            *(word*)&cdr(x) &= ~1;
-         while (isCell(x = cdr(x)));
-         return NULL;
-      }
-      if (y >= (any)Rom  &&  y < (any)(Rom+ROMS)) {
-         do
-            *(word*)&cdr(x) &= ~1;
-         while (y != (x = cdr(x)));
-         return NULL;
-      }
-      if (num(cdr(y)) & 1) {
-         while (x != y)
-            *(word*)&cdr(x) &= ~1,  x = cdr(x);
-         do
-            *(word*)&cdr(x) &= ~1;
-         while (y != (x = cdr(x)));
-         return y;
-      }
-   }
-}
-
 /* Comparisons */
 bool equal(any x, any y) {
    any a, b;
@@ -2343,6 +2260,7 @@ bool equal(any x, any y) {
       return NO;
    a = x, b = y;
    res = NO;
+
    for (;;) {
       if (!equal(car(x), (any)(num(car(y)) & ~1)))
          break;
