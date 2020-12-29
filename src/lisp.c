@@ -177,7 +177,7 @@ static inline bindFrame *allocFrame(int l)
 #define Free(p)         ((p)->car=Avail, (p)->cdr=0, (p)->type._t=0,  Avail=(p))
 
 /* Number access */
-#define num(x)          ((uword)(x))
+#define num(x)          ((word)(x))
 #define txt(n)          ((any)(num(n)<<1|1))
 #define box(n)          ((any)(num(n)<<2|2))
 #define unBox(n)        (num(n->car))
@@ -269,7 +269,7 @@ extern any Intern[2], Transient[2];
 extern any ApplyArgs, ApplyBody;
 
 static void gc(long long c);
-uword getHeapSize();
+uword getHeapSize(void);
 /* Prototypes */
 void *alloc(void*,size_t);
 any apply(any,any,bool,int,cell*);
@@ -644,6 +644,7 @@ any mkStr(char *s)
 any doHide(any ex)
 {
     // TODO - is this needed?
+   printf("%p\n", ex);
 
    return Nil;
 }
@@ -880,14 +881,6 @@ void rdOpen(any ex, any x, inFrame *f)
 void getStdin(void)
 {
     Chr = getc(InFile);
-}
-
-static void getParse(void)
-{
-    if ((Chr = getByte(&Env.parser->i, &Env.parser->w, &Env.parser->nm)) == 0)
-    {
-        Chr = ']';
-    }
 }
 
 void pushInFiles(inFrame *f)
@@ -1232,7 +1225,7 @@ static any read0(bool top)
         count++;
         if (count > 6)
         {
-            printf("%s too long\n", &w);
+            printf("%s too long\n", (char*)&w);
             bye(0);
         }
         Env.get();
@@ -1366,27 +1359,6 @@ static inline bool eol(void)
    return NO;
 }
 
-static any parse(any x, bool skp)
-{
-   int c;
-   parseFrame *save, parser;
-   void (*getSave)(void);
-   cell c1;
-
-   save = Env.parser;
-   Env.parser = &parser;
-   parser.nm = name(parser.sym = x);
-   getSave = Env.get,  Env.get = getParse,  c = Chr;
-   Push(c1, Env.parser->sym);
-   Chr = getByte1(&parser.i, &parser.w, &parser.nm);
-   if (skp)
-      getParse();
-   x = rdList();
-   drop(c1);
-   Chr = c,  Env.get = getSave,  Env.parser = save;
-   return x;
-}
-
 any load(any ex, int pr, any x)
 {
     cell c1, c2;
@@ -1396,7 +1368,7 @@ any load(any ex, int pr, any x)
 
     rdOpen(ex, x, &f);
     pushInFiles(&f);
-    doHide(Nil);
+    //doHide(Nil);
     x = Nil;
     for (;;)
     {
@@ -1471,7 +1443,7 @@ void outString(char *s)
 
 int bufNum(char buf[BITS/2], long long n)
 {
-    return sprintf(buf, "%ld", n);
+    return sprintf(buf, "%lld", n); // TODO - this is not quite right for 32 bit
 }
 
 void outNum(word n)
@@ -1645,7 +1617,7 @@ any symToNum(any sym, int scl, int sep, int ign)
 
 
     any r = cons(Nil, Nil);
-    r->car = n;
+    r->car = (any)n;
     r->type.parts[0] = NUM;
 
     return r;
@@ -1671,7 +1643,7 @@ any doAdd(any ex)
     }
 
     any r = cons(Nil, Nil);
-    r->car = n;
+    r->car = (any)n;
     r->type.parts[0] = NUM;
     return r;
 }
@@ -1695,7 +1667,7 @@ any doSub(any ex)
     }
 
     any r = cons(Nil, Nil);
-    r->car = n;
+    r->car = (any)n;
     r->type.parts[0] = NUM;
     return r;
 }
@@ -1719,7 +1691,7 @@ any doMul(any ex)
     }
 
     any r = cons(Nil, Nil);
-    r->car = n;
+    r->car = (any)n;
     r->type.parts[0] = NUM;
     return r;
 }
@@ -1872,7 +1844,7 @@ any doBye(any ex)
 any doDo(any x)
 {
     any f, y, z, a;
-    uword N=-1;
+    word N=-1;
 
     x = cdr(x);
     if (isNil(f = EVAL(car(x))))
@@ -1880,7 +1852,7 @@ any doDo(any x)
     if (isNum(f) && num(f) < 0)
         return Nil;
     else
-        N = f->car;
+        N = (word)f->car;
 
     x = cdr(x),  z = Nil;
     for (;;)
@@ -1933,8 +1905,7 @@ any doDo(any x)
 ///////////////////////////////////////////////
 
 
-static void mark(any);
-
+static void mark(any x);
 static void mark(any x)
 {
     if (!x) return;
@@ -1964,14 +1935,14 @@ void dump(FILE *fp, any p)
 
     if (getCARType(p) == TXT)
     {
-        fprintf(fp, "%p %s(TXT = %p) %p %p\n", p, &(p->car),p->car, p->cdr, p->type._t);
+        fprintf(fp, "%p %s(TXT = %p) %p %p\n", p, (char*)&(p->car),p->car, p->cdr, (void*)p->type._t);
     }
     else
     {
         fprintf(fp, "%p ", p);
         if(p->car) fprintf(fp, "%p ", p->car); else fprintf(fp, "0 ");
         if(p->cdr) fprintf(fp, "%p ", p->cdr); else fprintf(fp, "0 ");
-        if(p->type._t) fprintf(fp, "%p\n", p->type._t); else fprintf(fp, "0\n");
+        if(p->type._t) fprintf(fp, "%p\n", (void *)p->type._t); else fprintf(fp, "0\n");
     }
 }
 
@@ -1979,7 +1950,7 @@ void sweep(int free)
 {
    any p;
    heap *h;
-   int i, c =100;
+   int c =100;
    /* Sweep */
    if(free)Avail = NULL;
    h = Heaps;
@@ -2033,7 +2004,7 @@ void markAll()
 
    for (i = 0; i < MEMS; i += 3)
    {
-       mark(&Mem[i]);
+       mark((any)&Mem[i]);
    }
 
    /* Mark */
@@ -2094,7 +2065,6 @@ any doDump(any ignore)
     }
 
     heap *h = Heaps;
-    any p;
 
     dumpHeaps(mem, h);
 
@@ -2104,7 +2074,7 @@ any doDump(any ignore)
 }
 
 
-uword getHeapSize()
+uword getHeapSize(void)
 {
     uword size = 0;
     uword sizeFree = 0;
@@ -2136,7 +2106,6 @@ static void gc(long long c)
 {
     any p;
     heap *h;
-    int i;
 
     doDump(Nil);
     markAll();
