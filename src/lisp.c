@@ -613,15 +613,18 @@ any name(any s)
 }
 
 /* Make name */
-any mkSym(byte *s) {
-   int i;
-   uword w;
-   cell c1, *p;
+any mkSym(byte *s)
+{
+    int i;
+    uword w;
+    cell c1, *p;
 
-   putByte1(*s++, &i, &w, &p);
-   while (*s)
-      putByte(*s++, &i, &w, &p, &c1);
-   return popSym(i, w, p, &c1);
+    putByte1(*s++, &i, &w, &p);
+    while (*s)
+    {
+        putByte(*s++, &i, &w, &p, &c1);
+    }
+    return popSym(i, w, p, &c1);
 }
 
 /* Make string */
@@ -646,80 +649,98 @@ any doHide(any ex)
 }
 
 // (c...r 'lst) -> any
-any doCar(any ex) {
+any doCar(any ex)
+{
    any x = cdr(ex);
    x = EVAL(car(x));
    NeedLst(ex,x);
    return car(x);
 }
 
-any doCdr(any ex) {
+any doCdr(any ex)
+{
    any x = cdr(ex);
    x = EVAL(car(x));
    NeedLst(ex,x);
    return cdr(x);
 }
 
-any doCons(any x) {
+any doCons(any x)
+{
    any y;
    cell c1;
 
    x = cdr(x);
    Push(c1, y = cons(EVAL(car(x)),Nil));
    while (Nil != (cdr(x = cdr(x))))
+   {
       y = cdr(y) = cons(EVAL(car(x)),Nil);
+   }
    cdr(y) = EVAL(car(x));
-   doDump(Nil);
    return Pop(c1);
 }
 
 
 // (setq var 'any ..) -> any
-any doSetq(any ex) {
-   any x, y;
+any doSetq(any ex)
+{
+    any x, y;
 
-   x = cdr(ex);
-   do {
-      y = car(x),  x = cdr(x);
-      NeedVar(ex,y);
-      //CheckVar(ex,y);
-      val(y) = EVAL(car(x));
-   //} while (isCell(x = cdr(x)));
-   } while (Nil != (x = cdr(x)));
-   return val(y);
+    x = cdr(ex);
+    do
+    {
+        y = car(x),  x = cdr(x);
+        NeedVar(ex,y);
+        // CheckVar(ex,y); - TODO - what is this for?
+        val(y) = EVAL(car(x));
+    }
+    while (Nil != (x = cdr(x)));
+
+    return val(y);
 }
+
 static void makeError(any ex) {err(ex, NULL, "Not making");}
 
 // (link 'any ..) -> any
-any doLink(any x) {
-   any y;
+any doLink(any x)
+{
+    any y;
 
-   if (!Env.make)
-      makeError(x);
-   x = cdr(x);
-   do {
-      y = EVAL(car(x));
-      Env.make = &cdr(*Env.make = cons(y, Nil));
-   } while (Nil != (x = cdr(x)));
-   return y;
+    if (!Env.make)
+    {
+        makeError(x);
+    }
+    x = cdr(x);
+    do
+    {
+        y = EVAL(car(x));
+        Env.make = &cdr(*Env.make = cons(y, Nil));
+    }
+    while (Nil != (x = cdr(x)));
+    return y;
 }
 
 // (make .. [(made 'lst ..)] .. [(link 'any ..)] ..) -> any
-any doMake(any x) {
-   any *make, *yoke;
-   cell c1;
+any doMake(any x)
+{
+    any *make, *yoke;
+    cell c1;
 
-   Push(c1, Nil);
-   make = Env.make;
-   yoke = Env.yoke;
-   Env.make = Env.yoke = &data(c1);
-   //while (isCell(x = cdr(x)))
-   while (Nil != (x = cdr(x)))
-      if (isCell(car(x)))
-         evList(car(x));
-   Env.yoke = yoke;
-   Env.make = make;
-   return Pop(c1);
+    Push(c1, Nil);
+    make = Env.make;
+    yoke = Env.yoke;
+    Env.make = Env.yoke = &data(c1);
+
+    while (Nil != (x = cdr(x)))
+    {
+        if (isCell(car(x)))
+        {
+            evList(car(x));
+        }
+    }
+    Env.yoke = yoke;
+    Env.make = make;
+    return Pop(c1);
 }
 
 ///////////////////////////////////////////////
@@ -735,386 +756,518 @@ static any read0(bool);
 
 static char Delim[] = " \t\n\r\"'(),[]`~{}";
 
-static void openErr(any ex, char *s) {err(ex, NULL, "%s open: %s", s, strerror(errno));}
-static void eofErr(void) {err(NULL, NULL, "EOF Overrun");}
+static void openErr(any ex, char *s)
+{
+    err(ex, NULL, "%s open: %s", s, strerror(errno));
+}
+
+static void eofErr(void)
+{
+    err(NULL, NULL, "EOF Overrun");
+}
 
 /* Buffer size */
-int bufSize(any x) {return symBytes(x) + 1;}
-
-int pathSize(any x) {
-   int c = firstByte(x);
-
-   if (c != '@'  &&  (c != '+'))
-      return bufSize(x);
-   if (!Home)
-      return symBytes(x);
-   return strlen(Home) + symBytes(x);
+int bufSize(any x)
+{
+    return symBytes(x) + 1;
 }
 
-void bufString(any x, char *p) {
-   int c, i;
-   uword w;
+int pathSize(any x)
+{
+    int c = firstByte(x);
 
-   if (!isNil(x)) {
-      for (x = name(x), c = getByte1(&i, &w, &x); c; c = getByte(&i, &w, &x)) {
-         if (c == '^') {
-            if ((c = getByte(&i, &w, &x)) == '?')
-               c = 127;
-            else
-               c &= 0x1F;
-         }
-         *p++ = c;
-      }
-   }
-   *p = '\0';
+    if (c != '@'  &&  (c != '+'))
+    {
+        return bufSize(x);
+    }
+    if (!Home)
+    {
+        return symBytes(x);
+    }
+    return strlen(Home) + symBytes(x);
 }
 
-void pathString(any x, char *p) {
-   int c, i;
-   uword w;
-   char *h;
+void bufString(any x, char *p)
+{
+    int c, i;
+    uword w;
 
-   x = x->car;
-   if ((c = getByte1(&i, &w, &x)) == '+')
-      *p++ = c,  c = getByte(&i, &w, &x);
-   if (c != '@')
-      while (*p++ = c)
-         c = getByte(&i, &w, &x);
-   else {
-      if (h = Home)
-         do
-            *p++ = *h++;
-         while (*h);
-      while (*p++ = getByte(&i, &w, &x));
-   }
+    if (!isNil(x))
+    {
+        for (x = name(x), c = getByte1(&i, &w, &x); c; c = getByte(&i, &w, &x))
+        {
+            if (c == '^')
+            {
+                if ((c = getByte(&i, &w, &x)) == '?')
+                {
+                    c = 127;
+                }
+                else
+                {
+                    c &= 0x1F;
+                }
+            }
+            *p++ = c;
+        }
+    }
+    *p = '\0';
 }
 
-void rdOpen(any ex, any x, inFrame *f) {
-   //NeedSymb(ex,x); // TODO WHAT IS THIS ABOUT?
-   if (isNil(x))
-      f->fp = stdin;
-   else {
-      int ps = pathSize(x);
-      // TODO - check what can be done for stack FREE MUST BE ADDED
-      //char nm[ps];
-      char *nm = (char*)malloc(ps);
+void pathString(any x, char *p)
+{
+    int c, i;
+    uword w;
+    char *h;
 
-      pathString(x,nm);
-      if (nm[0] == '+') {
-         if (!(f->fp = fopen(nm+1, "a+")))
+    x = x->car;
+    if ((c = getByte1(&i, &w, &x)) == '+')
+    {
+        *p++ = c,  c = getByte(&i, &w, &x);
+    }
+    if (c != '@')
+    {
+        while (*p++ = c)
+        {
+            c = getByte(&i, &w, &x);
+        }
+    }
+    else
+    {
+        if (h = Home)
+        {
+            do
+            {
+                *p++ = *h++;
+            }
+            while (*h);
+        }
+
+        while (*p++ = getByte(&i, &w, &x));
+    }
+}
+
+void rdOpen(any ex, any x, inFrame *f)
+{
+    //NeedSymb(ex,x); // TODO WHAT IS THIS ABOUT?
+    if (isNil(x))
+    {
+        f->fp = stdin;
+    }
+    else
+    {
+        int ps = pathSize(x);
+        char *nm = (char*)malloc(ps);
+
+        pathString(x,nm);
+        if (nm[0] == '+')
+        {
+            if (!(f->fp = fopen(nm+1, "a+")))
+            {
+                openErr(ex, nm);
+            }
+            fseek(f->fp, 0L, SEEK_SET);
+        }
+        else if (!(f->fp = fopen(nm, "r")))
+        {
             openErr(ex, nm);
-         fseek(f->fp, 0L, SEEK_SET);
-      }
-      else if (!(f->fp = fopen(nm, "r")))
-         openErr(ex, nm);
+        }
 
-      free(nm);
-   }
+        free(nm);
+    }
 }
 
 /*** Reading ***/
-void getStdin(void) {Chr = getc(InFile);}
-
-static void getParse(void) {
-   if ((Chr = getByte(&Env.parser->i, &Env.parser->w, &Env.parser->nm)) == 0)
-      Chr = ']';
+void getStdin(void)
+{
+    Chr = getc(InFile);
 }
 
-void pushInFiles(inFrame *f) {
-   f->next = Chr,  Chr = 0;
-   InFile = f->fp;
-   f->get = Env.get,  Env.get = getStdin;
-   f->link = Env.inFrames,  Env.inFrames = f;
+static void getParse(void)
+{
+    if ((Chr = getByte(&Env.parser->i, &Env.parser->w, &Env.parser->nm)) == 0)
+    {
+        Chr = ']';
+    }
 }
 
-void pushOutFiles(outFrame *f) {
-   OutFile = f->fp;
-   f->put = Env.put,  Env.put = putStdout;
-   f->link = Env.outFrames,  Env.outFrames = f;
+void pushInFiles(inFrame *f)
+{
+    f->next = Chr,  Chr = 0;
+    InFile = f->fp;
+    f->get = Env.get,  Env.get = getStdin;
+    f->link = Env.inFrames,  Env.inFrames = f;
 }
 
-void popInFiles(void) {
-   if (InFile != stdin)
-      fclose(InFile);
-   Chr = Env.inFrames->next;
-   Env.get = Env.inFrames->get;
-   InFile = (Env.inFrames = Env.inFrames->link)?  Env.inFrames->fp : stdin;
+void pushOutFiles(outFrame *f)
+{
+    OutFile = f->fp;
+    f->put = Env.put,  Env.put = putStdout;
+    f->link = Env.outFrames,  Env.outFrames = f;
 }
 
-void popOutFiles(void) {
-   if (OutFile != stdout && OutFile != stderr)
-      fclose(OutFile);
-   Env.put = Env.outFrames->put;
-   OutFile = (Env.outFrames = Env.outFrames->link)? Env.outFrames->fp : stdout;
+void popInFiles(void)
+{
+    if (InFile != stdin)
+    {
+        fclose(InFile);
+    }
+    Chr = Env.inFrames->next;
+    Env.get = Env.inFrames->get;
+    InFile = (Env.inFrames = Env.inFrames->link)?  Env.inFrames->fp : stdin;
+}
+
+void popOutFiles(void)
+{
+    if (OutFile != stdout && OutFile != stderr)
+    {
+        fclose(OutFile);
+    }
+    Env.put = Env.outFrames->put;
+    OutFile = (Env.outFrames = Env.outFrames->link)? Env.outFrames->fp : stdout;
 }
 
 /* Skip White Space and Comments */
-static int skipc(int c) {
-   if (Chr < 0)
-      return Chr;
-   for (;;) {
-      while (Chr <= ' ') {
-         Env.get();
-         if (Chr < 0)
+static int skipc(int c)
+{
+    if (Chr < 0)
+    {
+        return Chr;
+    }
+    for (;;)
+    {
+        while (Chr <= ' ')
+        {
+            Env.get();
+            if (Chr < 0)
+            {
+                return Chr;
+            }
+        }
+        if (Chr != c)
+        {
             return Chr;
-      }
-      if (Chr != c)
-         return Chr;
-      Env.get();
-      while (Chr != '\n') {
-         if (Chr < 0)
-            return Chr;
-         Env.get();
-      }
-   }
+        }
+        Env.get();
+        while (Chr != '\n')
+        {
+            if (Chr < 0)
+            {
+                return Chr;
+            }
+            Env.get();
+        }
+    }
 }
 
-static void comment(void) {
-   Env.get();
-   if (Chr != '{') {
-      while (Chr != '\n') {
-         if (Chr < 0)
-            return;
-         Env.get();
-      }
-   }
-   else {
-      int n = 0;
+static void comment(void)
+{
+    Env.get();
+    if (Chr != '{')
+    {
+        while (Chr != '\n')
+        {
+            if (Chr < 0)
+            {
+                return;
+            }
+            Env.get();
+        }
+    }
+    else
+    {
+        int n = 0;
 
-      for (;;) {  // #{block-comment}# from Kriangkrai Soatthiyanont
-         Env.get();
-         if (Chr < 0)
-            return;
-         if (Chr == '#'  &&  (Env.get(), Chr == '{'))
-            ++n;
-         else if (Chr == '}'  &&  (Env.get(), Chr == '#')  &&  --n < 0)
-            break;
-      }
-      Env.get();
-   }
+        for (;;) {  // #{block-comment}# from Kriangkrai Soatthiyanont
+            Env.get();
+            if (Chr < 0)
+            {
+                return;
+            }
+            if (Chr == '#'  &&  (Env.get(), Chr == '{'))
+            {
+                ++n;
+            }
+            else if (Chr == '}'  &&  (Env.get(), Chr == '#')  &&  --n < 0)
+            {
+                break;
+            }
+        }
+        Env.get();
+    }
 }
 
-static int skip(void) {
-   for (;;) {
-      if (Chr < 0)
-         return Chr;
-      while (Chr <= ' ') {
-         Env.get();
-         if (Chr < 0)
+static int skip(void)
+{
+    for (;;)
+    {
+        if (Chr < 0)
+        {
             return Chr;
-      }
-      if (Chr != '#')
-         return Chr;
-      comment();
-   }
+        }
+        while (Chr <= ' ')
+        {
+            Env.get();
+            if (Chr < 0)
+            {
+                return Chr;
+            }
+        }
+
+        if (Chr != '#')
+        {
+            return Chr;
+        }
+        comment();
+    }
 }
 
 /* Test for escaped characters */
-static bool testEsc(void) {
-   for (;;) {
-      if (Chr < 0)
-         return NO;
-      if (Chr != '\\')
-         return YES;
-      if (Env.get(), Chr != '\n')
-         return YES;
-      do
-         Env.get();
-      while (Chr == ' '  ||  Chr == '\t');
-   }
+static bool testEsc(void)
+{
+    for (;;)
+    {
+        if (Chr < 0)
+            return NO;
+        if (Chr != '\\')
+            return YES;
+        if (Env.get(), Chr != '\n')
+            return YES;
+        do
+        {
+            Env.get();
+        }
+        while (Chr == ' '  ||  Chr == '\t');
+    }
 }
 
 /* Read a list */
-static any rdList(void) {
-   any x;
-   cell c1;
+static any rdList(void)
+{
+    any x;
+    cell c1;
 
-   for (;;) {
-      if (skip() == ')') {
-         Env.get();
-         return Nil;
-      }
-      if (Chr == ']')
-         return Nil;
-      if (Chr != '~')
-      {
-          x = cons(read0(NO),Nil);
-         Push(c1, x);
-         break;
-      }
-      Env.get();
-
-      x = read0(NO);
-      Push(c1, x);
-      if (isCell(x = data(c1) = EVAL(data(c1)))) {
-         while (isCell(cdr(x)))
-            x = cdr(x);
-         break;
-      }
-      drop(c1);
-   }
-   for (;;) {
-      if (skip() == ')') {
-         Env.get();
-         break;
-      }
-      if (Chr == ']')
-         break;
-      if (Chr == '.') {
-         Env.get();
-         cdr(x) = skip()==')' || Chr==']'? data(c1) : read0(NO);
-         if (skip() == ')')
+    for (;;)
+    {
+        if (skip() == ')')
+        {
             Env.get();
-         else if (Chr != ']')
-            err(NULL, x, "Bad dotted pair");
-         break;
-      }
-      if (Chr != '~')
-         x = cdr(x) = cons(read0(NO),Nil);
-      else {
-         Env.get();
-         cdr(x) = read0(NO);
-         cdr(x) = EVAL(cdr(x));
-         while (isCell(cdr(x)))
-            x = cdr(x);
-      }
-   }
-   return Pop(c1);
+            return Nil;
+        }
+        if (Chr == ']')
+        {
+            return Nil;
+        }
+        if (Chr != '~')
+        {
+            x = cons(read0(NO),Nil);
+            Push(c1, x);
+            break;
+        }
+        Env.get();
+
+        x = read0(NO);
+        Push(c1, x);
+        if (isCell(x = data(c1) = EVAL(data(c1))))
+        {
+            while (isCell(cdr(x)))
+            {
+                x = cdr(x);
+            }
+            break;
+        }
+        drop(c1);
+    }
+
+    for (;;)
+    {
+        if (skip() == ')')
+        {
+            Env.get();
+            break;
+        }
+        if (Chr == ']')
+            break;
+        if (Chr == '.')
+        {
+            Env.get();
+            cdr(x) = skip()==')' || Chr==']'? data(c1) : read0(NO);
+            if (skip() == ')')
+                Env.get();
+            else if (Chr != ']')
+                err(NULL, x, "Bad dotted pair");
+            break;
+        }
+        if (Chr != '~')
+        {
+            x = cdr(x) = cons(read0(NO),Nil);
+        }
+        else
+        {
+            Env.get();
+            cdr(x) = read0(NO);
+            cdr(x) = EVAL(cdr(x));
+            while (isCell(cdr(x)))
+            {
+                x = cdr(x);
+            }
+        }
+    }
+    return Pop(c1);
 }
 
 /* Try for anonymous symbol */
-static any anonymous(any s) {
-   int c, i;
-   uword w;
-   unsigned long long n;
-   heap *h;
+static any anonymous(any s)
+{
+    int c, i;
+    uword w;
+    unsigned long long n;
+    heap *h;
 
-   if ((c = getByte1(&i, &w, &s)) != '$')
-      return NULL;
-   n = 0;
-   while (c = getByte(&i, &w, &s)) {
-      if (c < '0' || c > '9')
-         return NULL;
-      n = n * 10 + c - '0';
-   }
-   n *= sizeof(cell);
-   h = Heaps;
-   do
-      if ((any)n > h->cells  &&  (any)n < h->cells + CELLS)
-         return symPtr((any)n);
-   while (h = h->next);
-   return NULL;
+    if ((c = getByte1(&i, &w, &s)) != '$')
+    {
+        return NULL;
+    }
+    n = 0;
+    while (c = getByte(&i, &w, &s))
+    {
+        if (c < '0' || c > '9')
+            return NULL;
+        n = n * 10 + c - '0';
+    }
+    n *= sizeof(cell);
+    h = Heaps;
+    do
+    {
+        if ((any)n > h->cells  &&  (any)n < h->cells + CELLS)
+        {
+            return symPtr((any)n);
+        }
+    }
+    while (h = h->next);
+
+    return NULL;
 }
 
 /* Read one expression */
-static any read0(bool top) {
-   int i;
-   uword w;
-   any x, y;
-   cell c1, *p;
+static any read0(bool top)
+{
+    int i;
+    uword w;
+    any x, y;
+    cell c1, *p;
 
-   if (skip() < 0) {
-      if (top)
-         return Nil;
-      eofErr();
-   }
-   if (Chr == '(') {
-      Env.get();
-      x = rdList();
-      if (top  &&  Chr == ']')
-         Env.get();
-      return x;
-   }
-   if (Chr == '[') {
-      Env.get();
-      x = rdList();
-      if (Chr != ']')
-         err(NULL, x, "Super parentheses mismatch");
-      Env.get();
-      return x;
-   }
-   if (Chr == '\'') {
-      Env.get();
-      return cons(doQuote_D, read0(top));
-   }
-   if (Chr == ',') {
-      Env.get();
-      return read0(top);
-   }
-   if (Chr == '`') {
-      Env.get();
-      Push(c1, read0(top));
-      x = EVAL(data(c1));
-      drop(c1);
-      return x;
-   }
-   if (Chr == '"') {
-      Env.get();
-      if (Chr == '"') {
-         Env.get();
-         return Nil;
-      }
-      if (!testEsc())
-         eofErr();
-      putByte1(Chr, &i, &w, &p);
-      while (Env.get(), Chr != '"') {
-         if (!testEsc())
+    if (skip() < 0)
+    {
+        if (top)
+            return Nil;
+        eofErr();
+    }
+    if (Chr == '(')
+    {
+        Env.get();
+        x = rdList();
+        if (top  &&  Chr == ']')
+            Env.get();
+        return x;
+    }
+    if (Chr == '[')
+    {
+        Env.get();
+        x = rdList();
+        if (Chr != ']')
+            err(NULL, x, "Super parentheses mismatch");
+        Env.get();
+        return x;
+    }
+    if (Chr == '\'')
+    {
+        Env.get();
+        return cons(doQuote_D, read0(top));
+    }
+    if (Chr == ',')
+    {
+        Env.get();
+        return read0(top);
+    }
+    if (Chr == '`')
+    {
+        Env.get();
+        Push(c1, read0(top));
+        x = EVAL(data(c1));
+        drop(c1);
+        return x;
+    }
+    if (Chr == '"')
+    {
+        Env.get();
+        if (Chr == '"')
+        {
+            Env.get();
+            return Nil;
+        }
+        if (!testEsc())
             eofErr();
-         putByte(Chr, &i, &w, &p, &c1);
-      }
-      y = popSym(i, w, p, &c1),  Env.get();
-      if (x = isIntern(tail(y), Transient))
-         return x;
-      intern(y, Transient);
-      return y;
-   }
-   if (strchr(Delim, Chr))
-      err(NULL, NULL, "Bad input '%c' (%d)", isprint(Chr)? Chr:'?', Chr);
-   if (Chr == '\\')
-      Env.get();
-   putByte1(Chr, &i, &w, &p);
+        putByte1(Chr, &i, &w, &p);
+        while (Env.get(), Chr != '"')
+        {
+            if (!testEsc())
+                eofErr();
+            putByte(Chr, &i, &w, &p, &c1);
+        }
+        y = popSym(i, w, p, &c1),  Env.get();
+        if (x = isIntern(tail(y), Transient))
+            return x;
+        intern(y, Transient);
+        return y;
+    }
+    if (strchr(Delim, Chr))
+        err(NULL, NULL, "Bad input '%c' (%d)", isprint(Chr)? Chr:'?', Chr);
+    if (Chr == '\\')
+        Env.get();
+    putByte1(Chr, &i, &w, &p);
 
-   int count=0;
-   for (;;)
-   {
-       count++;
-       if (count > 6)
-       {
-           printf("%s too long\n", &w);
-           bye(0);
-       }
-       Env.get();
-       if (strchr(Delim, Chr))
-       {
-           break;
-       }
-       if (Chr == '\\')
-       {
-           Env.get();
-       }
-       putByte(Chr, &i, &w, &p, &c1);
-   }
+    int count=0;
+    for (;;)
+    {
+        count++;
+        if (count > 6)
+        {
+            printf("%s too long\n", &w);
+            bye(0);
+        }
+        Env.get();
+        if (strchr(Delim, Chr))
+        {
+            break;
+        }
+        if (Chr == '\\')
+        {
+            Env.get();
+        }
+        putByte(Chr, &i, &w, &p, &c1);
+    }
 
-   y = popSym(i, w, p, &c1);
-   if (x = symToNum(tail(y), 0, '.', 0))
-   {
-      return x;
-   }
-   if (x = anonymous(name(y)))
-   {
-      return x;
-   }
-   if (x = isIntern(tail(y), Intern))
-   {
-      return x;
-   }
+    y = popSym(i, w, p, &c1);
+    if (x = symToNum(tail(y), 0, '.', 0))
+    {
+        return x;
+    }
+    if (x = anonymous(name(y)))
+    {
+        return x;
+    }
+    if (x = isIntern(tail(y), Intern))
+    {
+        return x;
+    }
 
-   intern(y, Intern);
-   val(y) = Nil;
-   return y;
+    intern(y, Intern);
+    val(y) = Nil;
+    return y;
 }
 
-any read1(int end) {
+any read1(int end)
+{
    if (!Chr)
       Env.get();
    if (Chr == end)
@@ -1123,79 +1276,88 @@ any read1(int end) {
 }
 
 /* Read one token */
-any token(any x, int c) {
-   int i;
-   uword w;
-   any y;
-   cell c1, *p;
+any token(any x, int c)
+{
+    int i;
+    uword w;
+    any y;
+    cell c1, *p;
 
-   if (!Chr)
-      Env.get();
-   if (skipc(c) < 0)
-      return Nil;
-   if (Chr == '"') {
-      Env.get();
-      if (Chr == '"') {
-         Env.get();
-         return Nil;
-      }
-      if (!testEsc())
-         return Nil;
-      Push(c1, y =  cons(mkChar(Chr), Nil));
-      while (Env.get(), Chr != '"' && testEsc())
-         y = cdr(y) = cons(mkChar(Chr), Nil);
-      Env.get();
-      return Pop(c1);
-   }
-   if (Chr >= '0' && Chr <= '9') {
-      putByte1(Chr, &i, &w, &p);
-      while (Env.get(), Chr >= '0' && Chr <= '9' || Chr == '.')
-         putByte(Chr, &i, &w, &p, &c1);
-      return symToNum(tail(popSym(i, w, p, &c1)), 0, '.', 0);
-   }
-   if (Chr != '+' && Chr != '-') {
-      // TODO check what needs to be done about stack - FREE MUST BE ADDED
-      // char nm[bufSize(x)];
-      char *nm = (char *)malloc(bufSize(x));
-
-      bufString(x, nm);
-      if (Chr >= 'A' && Chr <= 'Z' || Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr)) {
-         if (Chr == '\\')
+    if (!Chr)
+        Env.get();
+    if (skipc(c) < 0)
+        return Nil;
+    if (Chr == '"')
+    {
+        Env.get();
+        if (Chr == '"')
+        {
             Env.get();
-         putByte1(Chr, &i, &w, &p);
-         while (Env.get(),
-               Chr >= '0' && Chr <= '9' || Chr >= 'A' && Chr <= 'Z' ||
-               Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr) ) {
-            if (Chr == '\\')
-               Env.get();
+            return Nil;
+        }
+        if (!testEsc())
+            return Nil;
+        Push(c1, y =  cons(mkChar(Chr), Nil));
+        while (Env.get(), Chr != '"' && testEsc())
+            y = cdr(y) = cons(mkChar(Chr), Nil);
+        Env.get();
+        return Pop(c1);
+    }
+    if (Chr >= '0' && Chr <= '9')
+    {
+        putByte1(Chr, &i, &w, &p);
+        while (Env.get(), Chr >= '0' && Chr <= '9' || Chr == '.')
             putByte(Chr, &i, &w, &p, &c1);
-         }
-         y = popSym(i, w, p, &c1);
-         if (x = isIntern(tail(y), Intern))
-         {
-             free(nm);
-            return x;
-         }
-         intern(y, Intern);
-         val(y) = Nil;
-         free(nm);
-         return y;
-      }
-   }
-   y = mkTxt(c = Chr);
-   Env.get();
-   return mkChar(c);
+        return symToNum(tail(popSym(i, w, p, &c1)), 0, '.', 0);
+    }
+    if (Chr != '+' && Chr != '-')
+    {
+        // TODO check what needs to be done about stack - FREE MUST BE ADDED
+        // char nm[bufSize(x)];
+        char *nm = (char *)malloc(bufSize(x));
+
+        bufString(x, nm);
+        if (Chr >= 'A' && Chr <= 'Z' || Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr))
+        {
+            if (Chr == '\\')
+                Env.get();
+            putByte1(Chr, &i, &w, &p);
+            while (Env.get(),
+                    Chr >= '0' && Chr <= '9' || Chr >= 'A' && Chr <= 'Z' ||
+                    Chr == '\\' || Chr >= 'a' && Chr <= 'z' || strchr(nm,Chr) )
+            {
+                if (Chr == '\\')
+                    Env.get();
+                putByte(Chr, &i, &w, &p, &c1);
+            }
+            y = popSym(i, w, p, &c1);
+            if (x = isIntern(tail(y), Intern))
+            {
+                free(nm);
+                return x;
+            }
+            intern(y, Intern);
+            val(y) = Nil;
+            free(nm);
+            return y;
+        }
+    }
+    y = mkTxt(c = Chr);
+    Env.get();
+    return mkChar(c);
 }
 
-
-static inline bool eol(void) {
+static inline bool eol(void)
+{
    if (Chr < 0)
       return YES;
-   if (Chr == '\n') {
+   if (Chr == '\n')
+   {
       Chr = 0;
       return YES;
    }
-   if (Chr == '\r') {
+   if (Chr == '\r')
+   {
       Env.get();
       if (Chr == '\n')
          Chr = 0;
@@ -1204,7 +1366,8 @@ static inline bool eol(void) {
    return NO;
 }
 
-static any parse(any x, bool skp) {
+static any parse(any x, bool skp)
+{
    int c;
    parseFrame *save, parser;
    void (*getSave)(void);
@@ -1224,57 +1387,64 @@ static any parse(any x, bool skp) {
    return x;
 }
 
-any load(any ex, int pr, any x) {
-   cell c1, c2;
-   inFrame f;
+any load(any ex, int pr, any x)
+{
+    cell c1, c2;
+    inFrame f;
 
-   // TODO - get back function execution from command line if (isSymb(x) && firstByte(x) == '-')
+    // TODO - get back function execution from command line if (isSymb(x) && firstByte(x) == '-')
 
-   rdOpen(ex, x, &f);
-   pushInFiles(&f);
-   doHide(Nil);
-   x = Nil;
-   for (;;) {
-      if (InFile != stdin)
-         data(c1) = read1(0);
-      else {
-         if (pr && !Chr)
-            Env.put(pr), space(), fflush(OutFile);
-         data(c1) = read1('\n');
-         while (Chr > 0) {
-            if (Chr == '\n') {
-               Chr = 0;
-               break;
+    rdOpen(ex, x, &f);
+    pushInFiles(&f);
+    doHide(Nil);
+    x = Nil;
+    for (;;)
+    {
+        if (InFile != stdin)
+        {
+            data(c1) = read1(0);
+        }
+        else
+        {
+            if (pr && !Chr)
+                Env.put(pr), space(), fflush(OutFile);
+            data(c1) = read1('\n');
+            while (Chr > 0)
+            {
+                if (Chr == '\n')
+                {
+                    Chr = 0;
+                    break;
+                }
+                if (Chr == '#')
+                    comment();
+                else
+                {
+                    if (Chr > ' ')
+                        break;
+                    Env.get();
+                }
             }
-            if (Chr == '#')
-               comment();
-            else {
-               if (Chr > ' ')
-                  break;
-               Env.get();
-            }
-         }
-      }
-      if (isNil(data(c1))) {
-         popInFiles();
-         doHide(Nil);
-         return x;
-      }
-      Save(c1);
-      if (InFile != stdin || Chr || !pr)
-          // TODO - WHY @ does not work in files
-         x = EVAL(data(c1));
-      else {
-         Push(c2, val(At));
-         x = val(At) = EVAL(data(c1));
-         val(At3) = val(At2),  val(At2) = data(c2);
-         outString("-> "),  fflush(OutFile),  print(x),  newline();
-         getHeapSize();
-         gc(CELLS);
-         getHeapSize();
-      }
-      drop(c1);
-   }
+        }
+        if (isNil(data(c1)))
+        {
+            popInFiles();
+            doHide(Nil);
+            return x;
+        }
+        Save(c1);
+        if (InFile != stdin || Chr || !pr)
+            // TODO - WHY @ does not work in files
+            x = EVAL(data(c1));
+        else
+        {
+            Push(c2, val(At));
+            x = val(At) = EVAL(data(c1));
+            val(At3) = val(At2),  val(At2) = data(c2);
+            outString("-> "),  fflush(OutFile),  print(x),  newline();
+        }
+        drop(c1);
+    }
 }
 
 /*** Prining ***/
