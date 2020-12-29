@@ -11,7 +11,6 @@
 #define CELLS (1024*1024/sizeof(cell))
 #endif
 
-
 #define WORD ((int)sizeof(long long))
 #define BITS (8*WORD)
 
@@ -90,11 +89,6 @@ int getMark(any cell)
 {
     return cell->type.parts[3];
 }
-
-//////////////////////////////////////////////////////////
-#define ROMS 18
-#define RAMS 34
-//////////////////////////////////////////////////////////
 
 #include "def.d"
 #include "mem.d"
@@ -1658,7 +1652,9 @@ static void redefine(any ex, any s, any x) {
       giveup("THIS SHOULD NOT HAPPEN");
    }
 
-   if (!isNil(val(s))  &&  s != val(s)  &&  !equal(x,val(s)))
+   // TODO bring back redifine message perhaps?
+   //if (!isNil(val(s))  &&  s != val(s)  &&  !equal(x,val(s)))
+   if (!isNil(val(s))  &&  s != val(s))
       redefMsg(s,NULL);
    val(s) = x;
 
@@ -2232,82 +2228,6 @@ void heapAlloc(void) {
       Free(p);
    while (--p >= h->cells);
 }
-
-/* Comparisons */
-bool equal(any x, any y) {
-   any a, b;
-   bool res;
-
-   if (x == y)
-      return YES;
-   if (isNum(x))
-      return NO;
-   if (isSym(x)) {
-      if (!isSymb(y))
-         return NO;
-      if ((x = name(x)) == (y = name(y)))
-         return x != txt(0);
-      if (isTxt(x) || isTxt(y))
-         return NO;
-      do {
-         if (num(tail(x)) != num(tail(y)))
-            return NO;
-         x = val(x),  y = val(y);
-      } while (!isNum(x) && !isNum(y));
-      return x == y;
-   }
-   if (!isCell(y))
-      return NO;
-   a = x, b = y;
-   res = NO;
-
-   for (;;) {
-      if (!equal(car(x), (any)(num(car(y)) & ~1)))
-         break;
-      if (!isCell(cdr(x))) {
-         res = equal(cdr(x), cdr(y));
-         break;
-      }
-      if (!isCell(cdr(y)))
-         break;
-      if (x < (any)Rom  ||  x >= (any)(Rom+ROMS))
-         *(word*)&car(x) |= 1;
-      x = cdr(x),  y = cdr(y);
-      if (num(car(x)) & 1) {
-         for (;;) {
-            if (a == x) {
-               if (b == y) {
-                  for (;;) {
-                     a = cdr(a);
-                     if ((b = cdr(b)) == y) {
-                        res = a == x;
-                        break;
-                     }
-                     if (a == x) {
-                        res = YES;
-                        break;
-                     }
-                  }
-               }
-               break;
-            }
-            if (b == y) {
-               res = NO;
-               break;
-            }
-            *(word*)&car(a) &= ~1,  a = cdr(a),  b = cdr(b);
-         }
-         do
-            *(word*)&car(a) &= ~1,  a = cdr(a);
-         while (a != x);
-         return res;
-      }
-   }
-   while (a != x  &&  (a < (any)Rom  ||  a >= (any)(Rom+ROMS)))
-      *(word*)&car(a) &= ~1,  a = cdr(a);
-   return res;
-}
-
 
 /*** Error handling ***/
 void err(any ex, any x, char *fmt, ...) {
