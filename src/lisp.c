@@ -9,7 +9,7 @@
 
 #ifndef CELLS
 //#define CELLS (1*sizeof(cell))
-#define CELLS 48 
+#define CELLS (1024 * 100)
 #endif
 
 //int CELLS = 48;
@@ -1627,7 +1627,8 @@ any doAdd(any ex) {
       n += unBox(y);
    }
 
-   any r = cons((any)n, Nil);
+   any r = cons(Nil, Nil);
+   r->car = n;
    r->type.parts[0] = NUM;
    return r;
 }
@@ -1648,7 +1649,8 @@ any doSub(any ex) {
       n -= unBox(y);
    }
 
-   any r = cons((any)n, Nil);
+   any r = cons(Nil, Nil);
+   r->car = n;
    r->type.parts[0] = NUM;
    return r;
 }
@@ -1669,7 +1671,8 @@ any doMul(any ex) {
       n *= unBox(y);
    }
 
-   any r = cons((any)n, Nil);
+   any r = cons(Nil, Nil);
+   r->car = n;
    r->type.parts[0] = NUM;
    return r;
 }
@@ -1807,19 +1810,23 @@ any doBye(any ex) {
 // (do 'flg|num ['any | (NIL 'any . prg) | (T 'any . prg) ..]) -> any
 any doDo(any x) {
    any f, y, z, a;
+   word N=-1;
 
    x = cdr(x);
    if (isNil(f = EVAL(car(x))))
       return Nil;
    if (isNum(f) && num(f) < 0)
       return Nil;
+   else
+      N = f->car;
+
    x = cdr(x),  z = Nil;
    for (;;) {
-      if (isNum(f)) {
+      if (N >= 0) {
          //if (f == Zero)
-         if (f->car == 0)
+         if (N == 0)
             return z;
-         f->car = (any)((word)f->car - 1);
+         N--;
       }
       y = x;
       do {
@@ -1956,7 +1963,7 @@ void dumpHeaps(FILE *mem, heap *h)
 
 any doDump(any ignore)
 {
-    //return ignore;
+    return ignore;
     static int COUNT=0;
     char debugFileName[100];
     sprintf(debugFileName, "debug-%03d.mem", COUNT++);
@@ -2030,7 +2037,6 @@ MARKER = 5;
 MARKER = 6;
    for (p = Env.stack; p; p = cdr(p))
    {
-       printf("STACK MARKING START %p\n", p);
       mark(car(p));
    }
 MARKER = 7;
@@ -2087,7 +2093,7 @@ static void gc(long long c) {
    //heapAlloc();
    //return;
 
-   printf("GC CALLED\n");
+   //printf("GC CALLED\n");
    doDump(Nil);
 
 
@@ -2158,17 +2164,13 @@ static void gc(long long c) {
       } while (h = h->next);
 
 
-      printf("C = %lld\n", c);
-
       while (c >= 0)
       {
          heapAlloc(),  c -= CELLS;
       }
    }
 
-//heapAlloc();
-//
-   printf("GC RETURNING AVAIL=%p\n", Avail);
+   //printf("GC RETURNING AVAIL=%p\n", Avail);
    doDump(Nil);
    return;
 }
@@ -2271,9 +2273,6 @@ void *alloc(void *p, size_t siz) {
 void heapAlloc(void) {
    heap *h;
    cell *p;
-
-
-   printf("HEAP ALLOC CALLED\n");
 
    h = (heap*)((long long)alloc(NULL, sizeof(heap) + sizeof(cell)) + (sizeof(cell)-1) & ~(sizeof(cell)-1));
    h->next = Heaps,  Heaps = h;
@@ -2616,7 +2615,7 @@ int main(int ac, char *av[])
    AV = av;
    heapAlloc();
    doDump(Nil);
-   getHeapSize();
+   //getHeapSize();
    //CELLS = 1;
    Intern[0] = Intern[1] = Transient[0] = Transient[1] = Nil;
 
@@ -2659,7 +2658,7 @@ int main(int ac, char *av[])
    ApplyBody = cons(Nil, Nil);
 
    doDump(Nil);
-   getHeapSize();
+   //getHeapSize();
    loadAll(NULL);
    while (!feof(stdin))
       load(NULL, ':', Nil);
