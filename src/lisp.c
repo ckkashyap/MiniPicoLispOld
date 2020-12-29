@@ -1935,15 +1935,13 @@ any doDo(any x)
 
 static void mark(any);
 
-int MARKER = 0;
-
 static void mark(any x)
 {
     if (!x) return;
 
     if (getMark(x)) return;
 
-    setMark(x, MARKER);
+    setMark(x, 1);
 
     if (x == Nil) return;
 
@@ -1956,7 +1954,7 @@ static void mark(any x)
         if (!x) break;
         if (x==Nil) break;
         if (getMark(x)) break;
-        setMark(x, MARKER);
+        setMark(x, 1);
         if (getCARType(x) == PTR_CELL || getCARType(x) == INTERN) mark(car(x));
     }
 }
@@ -1974,7 +1972,6 @@ void dump(FILE *fp, any p)
         if(p->car) fprintf(fp, "%p ", p->car); else fprintf(fp, "0 ");
         if(p->cdr) fprintf(fp, "%p ", p->cdr); else fprintf(fp, "0 ");
         if(p->type._t) fprintf(fp, "%p\n", p->type._t); else fprintf(fp, "0\n");
-        //fprintf(fp, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
     }
 }
 
@@ -2034,27 +2031,20 @@ void markAll()
    any p;
    int i;
 
-MARKER = 1;
    for (i = 0; i < MEMS; i += 3)
    {
        mark(&Mem[i]);
    }
 
-MARKER = 2;
    /* Mark */
    mark(Intern[0]);
-MARKER = 3;
    mark(Transient[0]);
-MARKER = 4;
    mark(ApplyArgs);
-MARKER = 5;
    mark(ApplyBody);
-MARKER = 6;
    for (p = Env.stack; p; p = cdr(p))
    {
       mark(car(p));
    }
-MARKER = 7;
    for (p = (any)Env.bind;  p;  p = (any)((bindFrame*)p)->link)
    {
       for (i = ((bindFrame*)p)->cnt;  --i >= 0;)
@@ -2063,9 +2053,8 @@ MARKER = 7;
          mark(((bindFrame*)p)->bnd[i].val);
       }
    }
-MARKER = 8;
-   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link) {
-       printf("Marking catch frames\n");
+   for (p = (any)CatchPtr; p; p = (any)((catchFrame*)p)->link)
+   {
       if (((catchFrame*)p)->tag)
          mark(((catchFrame*)p)->tag);
       mark(((catchFrame*)p)->fin);
@@ -2108,17 +2097,6 @@ any doDump(any ignore)
     any p;
 
     dumpHeaps(mem, h);
-    // do
-    // {
-    //     fprintf(mem, "# START HEAP\n");
-    //     p = h->cells + CELLS-1;
-    //     do
-    //     {
-    //         //fprintf(mem, "0x%016lx %p %p %p\n", p, p->car, p->cdr, p->type._t);
-    //         dump(mem, p);
-    //     }
-    //     while (--p >= h->cells);
-    // } while (h = h->next);
 
     fclose(mem);
 
