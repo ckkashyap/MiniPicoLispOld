@@ -8,16 +8,14 @@
 #include <stdint.h>
 
 #ifndef CELLS
-//#define CELLS (1*sizeof(cell))
-#define CELLS (1024 * 100)
+#define CELLS (1024*1024/sizeof(cell))
 #endif
 
-//int CELLS = 48;
 
 #define WORD ((int)sizeof(long long))
 #define BITS (8*WORD)
 
-typedef unsigned long long word; // TODO - THIS IS USED IN SUBTRACTION !!!!
+typedef unsigned long long word;
 typedef unsigned char byte;
 typedef unsigned char *ptr;
 
@@ -28,14 +26,19 @@ typedef union
 {
     unsigned char parts[4];
     word _t;
-} PartType;
-typedef struct cell {            // PicoLisp primary data type
-   struct cell *car;
-   struct cell *cdr;
-   PartType type;
-} cell, *any;
+}
+PartType;
 
-typedef any (*fun)(any);
+// PicoLisp primary data type
+typedef struct _cell
+{
+   struct _cell *car;
+   struct _cell *cdr;
+   PartType type;
+}
+cell, *any;
+
+typedef any (*FunPtr)(any);
 
 typedef enum
 {
@@ -88,8 +91,6 @@ int getMark(any cell)
 {
     return cell->type.parts[3];
 }
-
-
 
 //////////////////////////////////////////////////////////
 // TODO this has to be fixed
@@ -259,7 +260,7 @@ any EVAL(any x)
       return evList(x);
    }
 }
-#define evSubr(f,x)     (*(fun)(num(f)))(x)
+#define evSubr(f,x)     (*(FunPtr)(num(f)))(x)
 
 /* Error checking */
 #define NeedNum(ex,x)   if (!isNum(x)) numError(ex,x)
@@ -1613,7 +1614,7 @@ any symToNum(any sym, int scl, int sep, int ign) {
 // (+ 'num ..) -> num
 any doAdd(any ex) {
    any x, y;
-   long long n=0;
+   word n=0;
 
    x = cdr(ex);
    if (isNil(y = EVAL(car(x))))
@@ -1635,7 +1636,7 @@ any doAdd(any ex) {
 
 any doSub(any ex) {
    any x, y;
-   long long n=0;
+   word n=0;
 
    x = cdr(ex);
    if (isNil(y = EVAL(car(x))))
@@ -1657,7 +1658,7 @@ any doSub(any ex) {
 
 any doMul(any ex) {
    any x, y;
-   long long n=0;
+   word n=0;
 
    x = cdr(ex);
    if (isNil(y = EVAL(car(x))))
